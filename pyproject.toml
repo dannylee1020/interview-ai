@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "interview-ai"
+version = "0.1.0"
+description = ""
+authors = ["Daniel Lee <daniel.lee@circleci.com>"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+openai = "^0.28.0"
+streamlit = "^1.27.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
