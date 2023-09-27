@@ -2,12 +2,13 @@ import streamlit as st
 import openai
 import os
 import json
+from pathlib import Path
 
 
 def app():
     st.title("Interview.ai Prototype")
 
-    openai.api_key = os.environ.get("OPENAI_API_KEY")
+    openai.api_key = os.environ["OPENAI_API_KEY"]
 
     if "openai_model" not in st.session_state:
         st.session_state["openai_model"] = "gpt-3.5-turbo"
@@ -23,7 +24,11 @@ def app():
         st.session_state.messages.append({"role": "user", "content": input})
 
         prompt = []
-        with open("../prompt/prompt.json", "r") as f:
+        prompt_filepath = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "prompt", "prompt.json")
+        )
+
+        with open(prompt_filepath, "r") as f:
             lines = json.load(f)
         prompt.extend(lines)
 
