@@ -10,7 +10,9 @@ packages = [{include = "app"}]
 python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
 openai = "^0.28.0"
 streamlit = "^1.27.0"
-
+fastapi = "^0.103.2"
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+python-multipart = "^0.0.6"
 
 [build-system]
 requires = ["poetry-core"]
