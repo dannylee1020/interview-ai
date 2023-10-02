@@ -2,7 +2,7 @@
 name = "interview-ai"
 version = "0.1.0"
 description = ""
-authors = ["Daniel Lee <daniel.lee@circleci.com>"]
+authors = ["Daniel Lee"]
 readme = "README.md"
 packages = [{include = "app"}]
 
