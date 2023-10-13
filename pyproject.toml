@@ -13,6 +13,9 @@ streamlit = "^1.27.0"
 fastapi = "^0.103.2"
 uvicorn = {extras = ["standard"], version = "^0.23.2"}
 python-multipart = "^0.0.6"
+websockets = "^11.0.3"
+httpx = "^0.25.0"
+asyncio = "^3.4.3"
 
 [build-system]
 requires = ["poetry-core"]
