@@ -1,6 +1,6 @@
 *.env
 *__pycache__
-*.python-version
+.python-version
 streamlit/test
 TODO.todo
 files
