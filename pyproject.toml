@@ -17,6 +17,9 @@ websockets = "^11.0.3"
 httpx = "^0.25.0"
 asyncio = "^3.4.3"
 
+[tool.poetry.group.dev.dependencies]
+websockets-cli = "^0.2.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
