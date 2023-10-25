@@ -12,20 +12,34 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 router = APIRouter()
 
 
-@router.websocket("/testwc")
-async def test_websocket(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_json({"messsage": "sending test message!"})
-    response = await websocket.receive_json()
-    print(f"This is server: {response}")
-    await websocket.close()
+# connection manager class for handling mutiple client connections
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_message(self, message: str, websocket: WebSocket):
+        await websocket.send_json(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
 
 
 @router.websocket("/chat")
 async def websocket_chat(websocket: WebSocket):
-    try:
-        await websocket.accept()
+    await manager.connect(websocket)
 
+    try:
         while True:
             request = await websocket.receive_json()
 
@@ -45,31 +59,11 @@ async def websocket_chat(websocket: WebSocket):
 
             for chunk in completion:
                 message = chunk.choices[0].delta.get("content")
-                await websocket.send_json(message)
+                await manager.send_message(message, websocket)
 
     except WebSocketDisconnect as e:
-        print(f"websocket disconnected: {str(e)}")
-        await websocket.close(code=1000, reason=None)
+        manager.disconnect(websocket)
+        await manager.broadcast(f"websocket disconneted {str(e)}")
     except Exception as e:
-        print(f"Error in Websocket connnection : {str(e)}")
-        await websocket.close(code=1011, reason="internal Error")
-
-
-# connection manager class for handling mutiple client connections
-
-# # class ConnectionManager:
-# #     def __init__(self):
-# #         self.active_connections: list[WebSocket] = []
-
-# #     async def connect(self, websocket: Websocket):
-# #         await websocket.accept()
-# #         self.active_connections.append(websocket)
-
-# #     def disconnect(self, websocket: Websocket):
-# #         self.active_connections.remove(websocket)
-
-# #     async def send_message(self, message: str, websocket: WebSocket):
-# #         await websocket.send_text(message)
-
-
-# # manager = ConnectionManager()
+        manager.disconnect(websocket)
+        await manager.broadcast(f"Error in websocket connection: {str(e)}")

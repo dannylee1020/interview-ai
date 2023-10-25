@@ -1,4 +1,6 @@
 import json
+import os
+import openai
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -14,7 +16,7 @@ def test_websocket():
 
 def test_chat():
     client = TestClient(app)
-    with client.websocket_connect("/chat") as websocket:
+    with client.websocket_connect("ws://localhost:8000/chat") as websocket:
         websocket.send_json(
             {
                 "message": "Hello! it's nice to meet you",
