@@ -1,6 +1,7 @@
 import json
 import os
 import openai
+import asyncio
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -17,20 +18,17 @@ def test_websocket():
 def test_chat():
     client = TestClient(app)
     with client.websocket_connect("ws://localhost:8000/chat") as websocket:
-        websocket.send_json(
-            {
-                "message": "Hello! it's nice to meet you",
-                "model": "gpt-3.5-turbo",
-            }
-        )
-
         while True:
+            websocket.send_text("Hello! It's nice to meet you")
             message = websocket.receive_text()
-            if not message:
-                break
+            print(message)
+
+            websocket.send_text("What's the most used backend langauge in your team?")
+            message = websocket.receive_text()
             print(message)
 
 
+
+
 if __name__ == "__main__":
-    test_chat()
-    # test_websocket()
+    asyncio.run(test_chat())
