@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login to AWS ECR
+        id: login-ecr
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.AWS_DEFAULT_REGION }}
+          aws ecr get-login-password --region ${{ secrets.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION}}.amazonaws.com
+
+      - name: Build Docker image
+        id: build-image
+        run: |
+          docker buildx build --platform=linux/amd64 -t interview-ai .
+          docker tag interview-ai:latest ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION}}.amazonaws.com/interview-ai:latest
+
+      - name: Push Docker image to ECR
+        id: push-image
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ secrets.AWS_DEFAULT_REGION}}.amazonaws.com/interview-ai:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service --cluster interview-ai-server --service my-service --task-definition interivew-ai-tasks
+
