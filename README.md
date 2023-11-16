@@ -9,9 +9,11 @@ Add OpenAI API key into the `.env` file first, then run
 to spin up the server
 
 ## Testing
-- Install poetry and run `poetry install` in the root directory
-- Initialize virtual environment by running `poetry shell`
-- Run `test_ws.py` in the test directory to test websocket connection with the chat endpoint. Messages between server and client will be logged to the console.
+Install poetry and run `poetry install` in the root directory.
+
+Initialize virtual environment by running `poetry shell`.
+
+Run `test_ws.py` in the test directory to test websocket connection with the chat endpoint. Messages between server and client will be logged to the console.
 
 
 
