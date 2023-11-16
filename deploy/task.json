@@ -1,0 +1,37 @@
+{
+    "family": "interview-ai-tasks",
+    "containerDefinitions": [
+      {
+        "name": "interview-ai-server",
+        "image": "077860636820.dkr.ecr.us-east-1.amazonaws.com/interview-ai:latest",
+        "essential": true,
+        "memory": 512,
+        "cpu": 256,
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/interview-ai-server",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+          }
+        },
+        "secrets":[
+            {
+                "name": "OPENAI_API_KEY",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077s860636820:secret:prod/openai-Ua2bMz"
+            }
+        ],
+        "portMappings": [
+            {
+                "containerPort": 8000,
+                "hostPort": 8000
+            }
+          ]
+      }
+    ],
+    "executionRoleArn": "arn:aws:iam::077860636820:role/ecs-task-execution",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512"
+  }
