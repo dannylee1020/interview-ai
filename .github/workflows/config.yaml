@@ -39,5 +39,5 @@ jobs:
     steps:
       - name: Deploy to ECS
         run: |
-          aws ecs update-service --cluster interview-ai-server --service my-service --task-definition interivew-ai-tasks
+          aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container
 
