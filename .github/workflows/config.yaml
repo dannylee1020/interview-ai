@@ -37,6 +37,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Register task definition
         run: |
           aws ecs register-task-definition --cli-input-json ./deploy/task.json
