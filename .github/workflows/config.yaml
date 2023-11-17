@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Register task definition
         run: |
-          aws ecs register-task-definition --cli-input-json file://$HOME/repos/interview-ai/deploy/task.json
+          aws ecs register-task-definition --cli-input-json "${cat ./deploy/task.json}"
       - name: Deploy to ECS
         run: |
           aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container
