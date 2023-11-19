@@ -6,7 +6,18 @@ on:
       - main
 
 jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS
+        id: configure-aws
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region us-east-1
+
   build:
+    needs: configure
     runs-on: ubuntu-latest
 
     steps:
@@ -16,9 +27,6 @@ jobs:
       - name: Login to AWS ECR
         id: login-ecr
         run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set default.region us-east-1
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 077860636820.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Build Docker image
@@ -33,7 +41,9 @@ jobs:
           docker push 077860636820.dkr.ecr.us-east-1.amazonaws.com/interview-ai:latest
 
   deploy:
-    needs: build
+    needs:
+      - configure
+      - build
     runs-on: ubuntu-latest
 
     steps:
