@@ -9,7 +9,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     steps:
-      - uses: dorny/path-filters@v2
+      - uses: dorny/paths-filter@v2
         id: filter
         with:
           filters: |
