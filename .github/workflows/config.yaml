@@ -24,6 +24,7 @@ jobs:
               - 'app/**'
 
   build-and-deploy:
+    needs: changes
     if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
     steps:
