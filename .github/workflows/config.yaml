@@ -19,10 +19,13 @@ jobs:
           filters: |
             task:
               - 'deploy/**'
+            app:
+              - 'Dockerfile'
+              - 'app/**'
 
   build-and-deploy:
+    if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -50,29 +53,6 @@ jobs:
         run: |
           docker push 077860636820.dkr.ecr.us-east-1.amazonaws.com/interview-ai:latest
 
-  # deploy:
-  #   needs:
-  #     - build
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Configure AWS
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: us-east-1
-
-  #     - name: Login to AWS ECR
-  #       id: login-ecr
-  #       run: |
-  #         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 077860636820.dkr.ecr.us-east-1.amazonaws.com
-
-
-      # - name: Push Docker image to ECR
-      #   id: push-image
-      #   run: |
-      #     docker push 077860636820.dkr.ecr.us-east-1.amazonaws.com/interview-ai:latest
 
   update-ecs-task:
     needs: changes
