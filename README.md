@@ -1,4 +1,4 @@
-# Description
+# About
 Backend service for `interview-ai` application responsible for establishing websocket connection with client and communicating with the GPT endpoint.
 
 ## Running Locally
