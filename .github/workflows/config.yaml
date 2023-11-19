@@ -9,7 +9,11 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     steps:
-      - uses: dorny/paths-filter@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Path filtering
+        uses: dorny/paths-filter@v2
         id: filter
         with:
           filters: |
