@@ -24,7 +24,7 @@
         "portMappings": [
             {
                 "containerPort": 8000,
-                "appProtocol": "HTTP"
+                "appProtocol": "http"
 
             }
           ]
