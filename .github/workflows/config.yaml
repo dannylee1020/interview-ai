@@ -8,6 +8,9 @@ on:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    outputs:
+      task: ${{steps.filter.outputs.task}}
+      app: ${{steps.filter.outputs.app}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
