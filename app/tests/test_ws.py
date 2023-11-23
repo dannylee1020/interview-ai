@@ -2,6 +2,7 @@ import json
 import os
 import openai
 import asyncio
+import websockets
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -15,7 +16,7 @@ def test_websocket():
         print(response)
 
 
-def test_chat():
+def test_client():
     client = TestClient(app)
     with client.websocket_connect("ws://localhost:8000/chat") as websocket:
         while True:
@@ -23,12 +24,15 @@ def test_chat():
             message = websocket.receive_text()
             print(message)
 
-            websocket.send_text("What's the most used backend langauge in your team?")
-            message = websocket.receive_text()
-            print(message)
 
-
+async def test_server():
+    url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat"
+    async with websockets.connect(url) as websocket:
+        while True:
+            await websocket.send("Hello It's nice to meet you")
+            message = await websocket.recv()
+            print(text)
 
 
 if __name__ == "__main__":
-    asyncio.run(test_chat())
+    asyncio.run(test_server_ws())
