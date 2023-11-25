@@ -30,6 +30,7 @@
           ]
       }
     ],
+    "taskRoleArn": "arn:aws:iam::077860636820:role/task-role",
     "executionRoleArn": "arn:aws:iam::077860636820:role/ecs-task-execution",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
