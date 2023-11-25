@@ -78,5 +78,5 @@ jobs:
           aws ecs register-task-definition --cli-input-json file://deploy/task.json
       - name: Deploy to ECS
         run: |
-          aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container
+          aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container --enable-execute-command
 
