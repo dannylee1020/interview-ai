@@ -5,14 +5,16 @@ import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.testclient import TestClient
 import openai
+from openai import AsyncOpenAI
 
 logging.basicConfig(level=logging.INFO)
 
 PROMPT_FILEPATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "prompt", "prompt.json")
 )
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 router = APIRouter()
+
 
 # connection manager class for handling mutiple client connections
 class ConnectionManager:
@@ -55,18 +57,18 @@ async def websocket_chat(websocket: WebSocket):
             full_message = prompt + [{"role": "user", "content": message}]
 
             logging.info("Sending request to the GPT endpoint...")
-            completion = openai.ChatCompletion.create(
+            stream = await client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=full_message,
                 stream=True,
             )
 
             logging.info("Sending the message back to the client...")
-            for chunk in completion:
-                message = chunk.choices[0].delta.get("content")
+            async for part in stream:
+                message = part.choices[0].delta.content or ""
                 await manager.send_message(message, websocket)
 
-    except openai.error.AuthenticationError as e:
+    except openai.AuthenticationError as e:
         print("Error authenticating. Check your OpenAI API key")
     except WebSocketDisconnect as e:
         manager.disconnect(websocket)
