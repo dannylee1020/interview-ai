@@ -1,0 +1,18 @@
+version: '3'
+
+tasks:
+  up:
+    cmds:
+      - docker compose up --build
+  down:
+    cmds:
+      - docker compose down
+  exec:
+    cmds:
+      - aws ecs execute-command --cluster interview-ai-server --task {{.TASK_ARN}} --container interview-ai-server --interactive --command "/bin/bash"
+    vars:
+      TASK_ARN:
+        sh: aws ecs list-tasks --cluster interview-ai-server | jq -r '.taskArns[0]'
+  test:
+    cmds:
+      - python app/tests/test_ws.py
