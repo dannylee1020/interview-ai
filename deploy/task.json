@@ -18,7 +18,7 @@
         "secrets":[
             {
                 "name": "OPENAI_API_KEY",
-                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/openai-Ua2bMz:OPENAI_API_KEY"
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/openai-Ua2bMz::OPENAI_API_KEY"
             }
         ],
         "portMappings": [
