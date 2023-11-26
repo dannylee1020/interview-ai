@@ -1,8 +1,8 @@
 import json
 import os
-import openai
 import asyncio
 import websockets
+from websockets.sync.client import connect
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -26,13 +26,25 @@ def test_client():
 
 
 async def test_server():
-    url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat"
+    url = "ws://localhost:8000/chat"
+    # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat"
     async with websockets.connect(url) as websocket:
         while True:
             await websocket.send("Hello It's nice to meet you")
             message = await websocket.recv()
-            print(text)
+            print(message)
+
+
+# def test_server():
+#     url = "ws://localhost:8000/chat"
+#     # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat"
+#     with connect(url) as websocket:
+#         while True:
+#             websocket.send("Hello It's nice to meet you")
+#             message = websocket.recv()
+#             print(message)
 
 
 if __name__ == "__main__":
     asyncio.run(test_server())
+    # test_server()
