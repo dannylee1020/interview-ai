@@ -15,4 +15,4 @@ tasks:
         sh: aws ecs list-tasks --cluster interview-ai-server | jq -r '.taskArns[0]'
   test:
     cmds:
-      - python app/tests/test_ws.py
+      - python tests/test_ws.py
