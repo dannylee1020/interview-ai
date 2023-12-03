@@ -1,14 +1,15 @@
 import os
+
 import openai
 from fastapi import FastAPI, WebSocket
 
 from app.api.routers import chat
 
-
 app = FastAPI()
 
 app.add_websocket_route("/testwc", chat.router)
 app.add_websocket_route("/chat", chat.router)
+app.add_websocket_route("/chat/audio", chat.router)
 
 
 @app.get("/healthcheck")
