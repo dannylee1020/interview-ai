@@ -57,6 +57,9 @@ jobs:
         run: |
           docker push 077860636820.dkr.ecr.us-east-1.amazonaws.com/interview-ai:latest
 
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container --enable-execute-command --force-new-deployment
 
   update-ecs-task:
     needs: changes
