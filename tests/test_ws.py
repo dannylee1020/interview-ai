@@ -19,7 +19,7 @@ def test_websocket():
 
 
 async def test_audio_chat():
-    url = "ws://localhost:8000/chat/audio"
+    url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat/audio"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -28,7 +28,10 @@ async def test_audio_chat():
         while True:
             await websocket.send(speech_bytes)
             data = await websocket.recv()
-            print(data)
+
+            with open(base_path + "/result.ogg", "wb") as f:
+                f.write(data)
+
             await websocket.close()
             break
 
