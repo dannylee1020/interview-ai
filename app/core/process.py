@@ -3,8 +3,6 @@ import io
 import json
 import logging
 import os
-import subprocess
-import tempfile
 
 import numpy as np
 import openai
@@ -13,25 +11,26 @@ from openai import AsyncOpenAI
 
 from app.utils import conn_manager, helper
 
-PROMPT_FILEPATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "prompt", "prompt.json")
-)
 logging.basicConfig(level=logging.INFO)
 client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
-async def chat_completion(message: str, stream: bool):
-    prompt = []
-    with open(PROMPT_FILEPATH, "r") as f:
-        lines = json.load(f)
-    prompt.extend(lines)
-    full_message = prompt + [{"role": "user", "content": message}]
+async def summarize_context(context: list):
+    prompt = "Could you summarize this conversations between user and assistant in a concise manner without losing context? \n"
+    context.append({"role": "user", "content": prompt})
+    response = await client.chat.completions.create(
+        model="gpt-3.5-turbo", messages=context, stream=False
+    )
+    new_context = [{"role": "system", "content": response.choices[0].message.content}]
+    return new_context
 
+
+async def chat_completion(message: list, stream: bool = False):
     logging.info("Sending request to the chat completion endpoint...")
 
     response = await client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=full_message,
+        messages=message,
         stream=stream,
     )
 
