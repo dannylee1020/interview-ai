@@ -4,7 +4,6 @@ import os
 
 import websockets
 from fastapi.testclient import TestClient
-from websockets.sync.client import connect
 
 from app.main import app
 from app.utils import helper
@@ -19,8 +18,8 @@ def test_websocket():
 
 
 async def test_audio_chat():
-    # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat/audio"
-    url = "ws://localhost:8000/chat/audio"
+    # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat/"
+    url = "ws://localhost:8000/chat/test-client-id-123"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -33,18 +32,19 @@ async def test_audio_chat():
             with open(base_path + "/result.ogg", "wb") as f:
                 f.write(data)
 
-            await websocket.close()
             break
+
+        # await websocket.close()
 
 
 async def test_chat():
-    url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat"
+    # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat/test"
+    url = "ws://localhost:8000/chat/test"
     async with websockets.connect(url) as websocket:
         while True:
             await websocket.send("Hello! It's nice to meet you!")
             message = await websocket.recv()
             print(message)
-            await websocket.close()
             break
 
 

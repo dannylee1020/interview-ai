@@ -1,19 +1,22 @@
-import os
-
 import openai
 from fastapi import FastAPI, WebSocket
+from fastapi.responses import HTMLResponse
 
 from app.api.routers import chat
 
 app = FastAPI()
 
-app.add_websocket_route("/testwc", chat.router)
-app.add_websocket_route("/chat", chat.router)
-app.add_websocket_route("/chat/audio", chat.router)
+app.include_router(chat.router)
+
+
+## For tesitng
+# @app.get("/")
+# async def get():
+#     return HTMLResponse(html)
 
 
 @app.get("/healthcheck")
-def health_check():
+async def health_check():
     return {"Hello": "World"}
 
 
