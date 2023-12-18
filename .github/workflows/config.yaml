@@ -24,7 +24,7 @@ jobs:
               - 'deploy/**'
             app:
               - 'Dockerfile'
-              - 'app/!(tests/**)/**'
+              - 'app/'
 
   build-and-deploy:
     needs: changes

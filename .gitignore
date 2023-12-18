@@ -1,7 +1,7 @@
 *.env
 *__pycache__
 .python-version
-streamlit/test
+streamlit
 TODO.todo
 files
 .venv

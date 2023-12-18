@@ -4,7 +4,6 @@ import json
 import logging
 import os
 
-import numpy as np
 import openai
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from openai import AsyncOpenAI
