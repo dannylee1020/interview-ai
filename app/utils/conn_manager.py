@@ -1,5 +1,4 @@
 from fastapi import WebSocket
-from fastapi.websockets import WebSocketState
 
 
 class ConnectionManager:

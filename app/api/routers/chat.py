@@ -4,7 +4,7 @@ import logging
 import os
 
 import openai
-from fastapi import APIRouter, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from openai import AsyncOpenAI
 
 from app.core.process import chat_completion, speech_to_text, text_to_speech
