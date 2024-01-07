@@ -35,5 +35,5 @@
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
     "cpu": "512",
-    "memory": "1"
+    "memory": "1GB"
   }
