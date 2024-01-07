@@ -3,13 +3,16 @@ from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
 
 from app.api.routers import chat
+from app.utils import helper
 
 app = FastAPI()
 
 app.include_router(chat.router)
 
+# # For tesitng
+# html = helper.get_html()
 
-## For tesitng
+
 # @app.get("/")
 # async def get():
 #     return HTMLResponse(html)

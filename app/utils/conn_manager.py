@@ -1,17 +1,19 @@
+from collections import defaultdict
+
 from fastapi import WebSocket
 
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: dict[WebSocket] = {}
+        self.active_connections: dict[str, dict[str, WebSocket]] = defaultdict(dict)
         self.client_context: dict[list] = {}
 
-    async def connect(self, id: str, websocket: WebSocket):
+    async def connect(self, session_id: str, client_id: str, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections[id] = websocket
+        self.active_connections[session_id][client_id] = websocket
 
-    async def disconnect(self, id: str, websocket: WebSocket):
-        del self.active_connections[id]
+    async def disconnect(self, session_id: str, client_id: str, websocket: WebSocket):
+        del self.active_connections[session_id][client_id]
 
     async def send_text(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)

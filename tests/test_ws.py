@@ -1,11 +1,20 @@
 import asyncio
 import json
 
+import respx
 import websockets
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.main import app
 from app.utils import helper
+
+TEST_MAIN_CLIENT = "test-session-id-123:client-main"
+TEST_CODE_CLIENT = "test-session-id-789:client-code"
+REMOTE_SERVER_BASE_URL = (
+    "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000"
+)
+LOCAL_SERVER_BASE_URL = "ws://localhost:8000"
 
 
 def test_websocket():
@@ -16,9 +25,8 @@ def test_websocket():
         print(response)
 
 
-async def test_audio_chat():
-    # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat/"
-    url = "ws://localhost:8000/chat/test-client-id-123"
+async def test_main():
+    url = f"{LOCAL_SERVER_BASE_URL}/chat/?id={TEST_MAIN_CLIENT}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -33,20 +41,34 @@ async def test_audio_chat():
 
             break
 
-        # await websocket.close()
 
+async def run_test(client_id):
+    url = f"{LOCAL_SERVER_BASE_URL}/chat/test/?id={client_id}"
+    base_path = "./files"
+    audio_opus = base_path + "/sample_voice.ogg"
+    speech_bytes = open(audio_opus, "rb").read()
 
-async def test_chat():
-    # url = "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000/chat/test"
-    url = "ws://localhost:8000/chat/test"
     async with websockets.connect(url) as websocket:
         while True:
-            await websocket.send("Hello! It's nice to meet you!")
-            message = await websocket.recv()
-            print(message)
+            await websocket.send(speech_bytes)
+            data = await websocket.recv()
+
+            if client_id.split(":")[1] == "client-code":
+                print(data)
+            else:
+                with open(base_path + "/result.ogg", "wb") as f:
+                    f.write(data)
+
             break
 
 
+async def test_code():
+    test_clients = ["test-session-id:client-main", "test-session-id:client-code"]
+    tasks = [run_test(client) for client in test_clients]
+
+    await asyncio.gather(*tasks)
+
+
 if __name__ == "__main__":
-    # asyncio.run(test_chat())
-    asyncio.run(test_audio_chat())
+    # asyncio.run(test_main())
+    asyncio.run(test_code())
