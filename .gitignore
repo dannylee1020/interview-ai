@@ -6,3 +6,4 @@ TODO.todo
 files
 .venv
 *.DS_Store
+*.pyc
