@@ -3,7 +3,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
-from app.api.routers import chat
+from app.api.routers import auth, chat
 from app.utils import helper
 
 app = FastAPI()
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(chat.router)
+app.include_router(auth.router)
 
 # # For tesitng
 # html = helper.get_html()
