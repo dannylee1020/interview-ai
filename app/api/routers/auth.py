@@ -19,8 +19,24 @@ class User(BaseModel):
     password: str
 
 
-@router.post("/")
-def auth_users(user: User):
+@router.post("/signup")
+def signup_user(user: User):
     res = supabase.auth.sign_up({"email": user.email, "password": user.password})
 
     return {"message": "successfully created a user"}
+
+
+@router.post("/login")
+def login_user(user: User):
+    res = supabase.auth.sign_in_with_password(
+        {"email": user.email, "password": user.password}
+    )
+
+    return {"message": "login successful"}
+
+
+@router.get("/logout")
+def logout_user():
+    res = supabase.auth.sign_out()
+
+    return {"message": "logout successful"}
