@@ -21,14 +21,6 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(auth.router)
 
-# # For tesitng
-# html = helper.get_html()
-
-
-# @app.get("/")
-# async def get():
-#     return HTMLResponse(html)
-
 
 @app.get("/healthcheck")
 async def health_check():

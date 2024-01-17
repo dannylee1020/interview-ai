@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 
 import openai
 import respx
@@ -88,6 +89,7 @@ async def ws_chat_audio(ws: WebSocket, id: str | None = None):
                 speech_bytes = await text_to_speech(response)
                 logging.info("Sending data back to client...")
 
+                # ? Stream audio to frontend to "fake" the latency?
                 await manager.send_bytes(speech_bytes, ws)
 
             if len(context) > 50:
@@ -105,14 +107,12 @@ async def ws_chat_audio(ws: WebSocket, id: str | None = None):
         logging.info(f"Unexpected exception raised: {str(e)}")
 
 
-@router.websocket("/test/")
+@router.websocket("/test/multiple-clients/")
 async def ws_chat_audio_test(ws: WebSocket, id: str | None = None):
     """
     testing-only endpoint that mocks the response from chat completion api
     and tests for sending different messages to multiple clients
     """
-    session_id = id.split(":")[0]
-    client_id = id.split(":")[1]
 
     context = manager.client_context.get(client_id, [])
 
@@ -186,44 +186,3 @@ async def ws_chat_audio_test(ws: WebSocket, id: str | None = None):
     except Exception as e:
         await manager.disconnect(session_id, client_id, ws)
         logging.info(f"Unexpected exception raised: {str(e)}")
-
-
-# @router.websocket("/test")
-# async def websocket_chat(websocket: WebSocket):
-#     """
-#     This endpoint is for testing only
-#     """
-#     context = []
-#     logging.info("Opening websocket channel..")
-#     # await manager.connect(websocket)
-#     await websocket.accept()
-
-#     if context == []:
-#         prompt = helper.get_prompt(PROMPT_FILEPATH)
-#         context.extend(prompt)
-
-#     try:
-#         while True:
-#             message = await websocket.receive_text()
-#             logging.info("Received message from client..")
-
-#             new_message = [{"role": "user", "content": message}]
-#             context.extend(new_message)
-
-#             stream = await chat_completion(context, stream=False)
-
-#             res = [{"role": "assistant", "content": stream}]
-#             context.extend(res)
-
-#             logging.info("Sending the message back to the client...")
-#             await websocket.send_text(stream)
-
-#             if len(context) > 50:
-#                 context = context[25:]
-
-#     except openai.AuthenticationError as e:
-#         print("Error authenticating. Check your OpenAI API key")
-#     except WebSocketDisconnect as e:
-#         print("Websocket disconnected")
-#     except Exception as e:
-#         print("Exception occured")
