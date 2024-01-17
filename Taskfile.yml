@@ -19,3 +19,12 @@ tasks:
   run:
     cmds:
       - uvicorn app.main:app --host 0.0.0.0 --port 8000
+  migrate-prod:
+    cmds:
+      - flyway migrate -environment=prod
+  migrate-dev:
+    cmds:
+      - flyway migrate -environemnt=dev
+  connect-db:
+    cmds:
+      - psql -h db.zwlrkwwxehylioimgswa.supabase.co -p 5432 -d postgres -U postgres
