@@ -25,6 +25,8 @@ jobs:
             app:
               - 'Dockerfile'
               - 'app/**'
+            migration:
+              - 'migrations/**'
 
   build-and-deploy:
     needs: changes
@@ -82,4 +84,19 @@ jobs:
       - name: Deploy to ECS
         run: |
           aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container --enable-execute-command
+
+  run-migration:
+    needs: changes
+    if: ${{needs.changes.outputs.migration == 'true'}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Flyway
+        run: |
+           wget -qO- https://download.red-gate.com/maven/release/com/redgate/flyway/flyway-commandline/10.6.0/flyway-commandline-10.6.0-linux-x64.tar.gz | tar -xvz && sudo ln -s `pwd`/flyway-10.6.0/flyway /usr/local/bin
+
+      - name: Perform migration
+        run: flyway migrate -url=${{ secrets.DB_URL }} -user=postgres -password=${{ secrets.DB_PASSWORD }} -locations=filesystem:/migrations
 
