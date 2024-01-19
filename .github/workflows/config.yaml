@@ -99,5 +99,5 @@ jobs:
            wget -qO- https://download.red-gate.com/maven/release/com/redgate/flyway/flyway-commandline/10.6.0/flyway-commandline-10.6.0-linux-x64.tar.gz | tar -xvz && sudo ln -s `pwd`/flyway-10.6.0/flyway /usr/local/bin
 
       - name: Perform migration
-        run: flyway migrate -url=${{ secrets.DB_URL }} -user=postgres -password=${{ secrets.DB_PASSWORD }} -locations=filesystem:/migrations
+        run: flyway migrate -url=${{ secrets.DB_URL }} -user=postgres -password=${{ secrets.DB_PASSWORD }} -locations=filesystem:./migrations
 
