@@ -22,6 +22,8 @@ PROMPT_FILEPATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "prompt", "prompt.json")
 )
 
+# ! This is a proected resource. Need to check access token for all users.
+
 
 @router.websocket("/")
 async def ws_chat_audio(ws: WebSocket, id: str | None = None):
