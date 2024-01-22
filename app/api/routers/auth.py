@@ -105,7 +105,6 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
 
     # * save the token into cache
     WHITELIST[user["id"]] = access_token
-    print(WHITELIST)
 
     return Token(access_token=access_token, token_type="bearer")
 
@@ -116,7 +115,6 @@ def logout_user(token: Annotated[str, Depends(oauth2_scheme)]):
     user_id = token_data["sub"]
 
     BLACKLIST[user_id] = token
-    print(BLACKLIST)
 
     return JSONResponse(content={"message": "user successfully logged out"})
 
