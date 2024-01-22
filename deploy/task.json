@@ -19,6 +19,30 @@
             {
                 "name": "OPENAI_API_KEY",
                 "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/openai-Ua2bMz:OPENAI_API_KEY::"
+            },
+            {
+                "name": "DB_NAME",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:DB_NAME::"
+            },
+            {
+                "name": "DB_HOST",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:DB_HOST::"
+            },
+            {
+                "name": "DB_PORT",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:DB_PORT::"
+            },
+            {
+                "name": "DB_USER",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:DB_USER::"
+            },
+            {
+                "name": "DB_PASSWORD",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:DB_PASSWORD::"
+            },
+            {
+                "name": "JWT_SECRET_KEY",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/jwt_secret-YLTByD:JWT_SECRET_KEY::"
             }
         ],
         "portMappings": [
