@@ -32,10 +32,3 @@ def create_db_conn():
         logging.error(f"Unable to connect to the database: {e}")
 
         return None
-
-
-def execute(db_conn, sql, *args):
-    cur = db_conn.execute(sql, *args)
-    db_conn.close()
-
-    return cur
