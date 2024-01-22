@@ -25,7 +25,6 @@ WHITELIST = {}
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/auth")
 
-conn = pg_conn.create_db_conn()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 uid = uuid.uuid4()
 
@@ -53,7 +52,7 @@ class ResetPassword(BaseModel):
 
 @router.post("/signup", status_code=200)
 def signup_user(auth_data: Auth):
-    user = auth.get_user(conn, auth_data.email)
+    user = auth.get_user(auth_data.email)
 
     if user != None:
         return JSONResponse(
@@ -64,6 +63,7 @@ def signup_user(auth_data: Auth):
         pw_hash = auth.hash_password(auth_data.password)
         auth.verify_password(pw_hash, auth_data.password)
 
+        conn = pg_conn.create_db_conn()
         conn.execute(
             queries.signup_user,
             (uid, auth_data.email, pw_hash, datetime.now(timezone.utc)),
@@ -84,7 +84,7 @@ def signup_user(auth_data: Auth):
 
 @router.post("/login")
 def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
-    user = auth.authenticate_user(conn, form_data.username, form_data.password)
+    user = auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=401,

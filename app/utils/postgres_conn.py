@@ -36,7 +36,6 @@ def create_db_conn():
 
 def execute(db_conn, sql, *args):
     cur = db_conn.execute(sql, *args)
-    db_conn.commit()
     db_conn.close()
 
     return cur

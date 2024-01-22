@@ -9,6 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from app.queries import queries
+from app.utils import postgres_conn as pg_conn
 
 SECRET_KEY = str(os.environ.get("JWT_SECRET_KEY"))
 ALGORITHM = "HS256"
@@ -28,12 +29,17 @@ def verify_password(hash, pw):
     return ph.verify(hash, pw)
 
 
-def get_user(db_conn, email: str):
-    return db_conn.execute(queries.get_user, (email,)).fetchone()
+def get_user(email: str):
+    conn = pg_conn.create_db_conn()
+    user = conn.execute(queries.get_user, (email,)).fetchone()
+    conn.close()
+
+    return user
 
 
-def authenticate_user(db_conn, email: str, password: str):
-    user = db_conn.execute(queries.get_user, (email,)).fetchone()
+def authenticate_user(email: str, password: str):
+    user = get_user(email)
+
     if not user:
         return False
     if not verify_password(user["encrypted_password"], password):
@@ -77,7 +83,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     except JWTError:
         raise cred_exception
 
-    user = auth.get_user(conn, user_email)
+    user = auth.get_user(user_email)
     if user is None:
         raise cred_exception
 
