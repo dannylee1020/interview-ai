@@ -126,6 +126,7 @@ def reset_password(cred: ResetPassword):
     pw_hash = auth.hash_password(cred.new_password)
     auth.verify_password(pw_hash, cred.new_password)
 
+    conn = pg_conn.create_db_conn()
     conn.execute(
         queries.reset_password, (pw_hash, datetime.now(timezone.utc), cred.email)
     )
