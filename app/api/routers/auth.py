@@ -26,7 +26,6 @@ logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/auth")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-uid = uuid.uuid4()
 
 
 class Token(BaseModel):
@@ -53,6 +52,7 @@ class ResetPassword(BaseModel):
 @router.post("/signup", status_code=200)
 def signup_user(auth_data: Auth):
     user = auth.get_user(auth_data.email)
+    uid = uuid.uuid4()
 
     if user != None:
         return JSONResponse(
