@@ -6,3 +6,19 @@ services:
     env_file: .env
     environment:
       - PYTHONPATH=/app
+  postgres:
+    image: postgres
+    container_name: postgres_dev
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DEV_PG_PASSWORD}
+    ports:
+      - 5432:5432
+    volumes:
+      - ./dev_resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+  redis:
+    image: redis
+    container_name: redis_dev
+    ports:
+      - 6379:6379

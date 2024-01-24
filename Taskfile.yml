@@ -3,6 +3,9 @@ version: '3'
 tasks:
   up:
     cmds:
+      - docker compose up
+  build:
+    cmds:
       - docker compose up --build
   down:
     cmds:
@@ -13,9 +16,6 @@ tasks:
     vars:
       TASK_ARN:
         sh: aws ecs list-tasks --cluster interview-ai-server | jq -r '.taskArns[0]'
-  test:
-    cmds:
-      - python tests/test_ws.py
   run:
     cmds:
       - uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -25,6 +25,12 @@ tasks:
   migrate-dev:
     cmds:
       - flyway migrate -environemnt=dev
-  connect-db:
+  connect-dev-db:
     cmds:
-      - psql -h db.zwlrkwwxehylioimgswa.supabase.co -p 5432 -d postgres -U postgres
+      - psql -h localhost -p 5432 -U postgres -d postgres
+  redis-cli:
+    cmds:
+      - docker exec -it {{.CONTAINER_ID}} redis-cli
+    vars:
+      CONTAINER_ID:
+        sh: docker ps -qf "name=redis_dev"

@@ -6,6 +6,7 @@ from typing import Annotated
 
 import argon2
 import psycopg
+import redis
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -18,13 +19,10 @@ from app.utils import postgres_conn as pg_conn
 
 ACCESS_TOKEN_EXPIRATION_MIN = 30
 
-# TODO: need to implement remote cache server instead of data structures on memory
-BLACKLIST = {}
-WHITELIST = {}
-
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/auth")
 
+r = redis.Redis(host="redis_dev", port=6379, db=0)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
@@ -56,7 +54,9 @@ def signup_user(auth_data: Auth):
 
     if user != None:
         return JSONResponse(
-            content={"message": "An account already exists under this email"}
+            content={
+                "message": "This email is already in use. Log in if you already have an account"
+            }
         )
 
     try:
@@ -99,14 +99,21 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
     }
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
-    access_token = auth.create_access_token(payload, access_token_expires)
+    new_access_token = auth.create_access_token(payload, access_token_expires)
 
-    # ? create a refresh token and save it in database?
+    blacklisted = r.get(f"blacklist:{user['id']}")
 
-    # * save the token into cache
-    WHITELIST[user["id"]] = access_token
+    if not blacklisted:
+        w_token = r.get(f"whitelist:{user['id']}")
 
-    return Token(access_token=access_token, token_type="bearer")
+        if not w_token or auth.decode_jwt(w_token)["exp"] < datetime.now(timezone.utc):
+            r.set("whitelist", f"{user['id']}:{new_access_token}")
+            return Token(access_token=new_access_token, token_type="bearer")
+
+        return Token(access_token=w_token, token_type="bearer")
+
+    r.set("whitelist", f"{user['id']}:{new_access_token}")
+    return Token(access_token=new_access_token, token_type="bearer")
 
 
 @router.get("/logout")
@@ -114,12 +121,12 @@ def logout_user(token: Annotated[str, Depends(oauth2_scheme)]):
     token_data = auth.decode_jwt(token)
     user_id = token_data["sub"]
 
-    BLACKLIST[user_id] = token
+    r.set("blacklist", f"{user_id}:{token}")
+    r.delete("whitelist", f"{user_id}:{token}")
 
     return JSONResponse(content={"message": "user successfully logged out"})
 
 
-# * sending reset email can probably happen in the frontend
 # ! this should only be accessible through the reset email sent out by us
 @router.post("/reset-password")
 def reset_password(cred: ResetPassword):
