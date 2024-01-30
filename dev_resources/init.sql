@@ -6,6 +6,3 @@ CREATE TABLE public.users (
     updated_at timestamptz,
     deleted_at timestamptz
 );
-
-
-

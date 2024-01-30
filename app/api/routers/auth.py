@@ -1,13 +1,14 @@
 import logging
 import os
 import uuid
+from calendar import timegm
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import argon2
 import psycopg
 import redis
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
@@ -28,6 +29,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 
@@ -37,19 +39,18 @@ class TokenData(BaseModel):
     exp: str
 
 
-class Auth(BaseModel):
-    email: str
-    password: str
-
-
 class ResetPassword(BaseModel):
     email: str
     new_password: str
 
 
-@router.post("/signup", status_code=200)
-def signup_user(auth_data: Auth):
-    user = auth.get_user(auth_data.email)
+class RefreshToken(BaseModel):
+    token: str
+
+
+@router.post("/signup", status_code=201)
+def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()]):
+    user = auth.get_user(email)
     uid = uuid.uuid4()
 
     if user != None:
@@ -60,13 +61,13 @@ def signup_user(auth_data: Auth):
         )
 
     try:
-        pw_hash = auth.hash_password(auth_data.password)
-        auth.verify_password(pw_hash, auth_data.password)
+        pw_hash = auth.hash_password(password)
+        auth.verify_password(pw_hash, password)
 
         conn = pg_conn.create_db_conn()
         conn.execute(
             queries.signup_user,
-            (uid, auth_data.email, pw_hash, datetime.now(timezone.utc)),
+            (uid, email, pw_hash, datetime.now(timezone.utc)),
         )
         conn.commit()
         conn.close()
@@ -82,8 +83,12 @@ def signup_user(auth_data: Auth):
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
 
 
-@router.post("/login")
+@router.post("/login", status_code=201)
 def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+    """
+    Validates user credential, then invalidates user's refresh token.
+    Finally returns newly created access and refresh token back to user
+    """
     user = auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -100,35 +105,72 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
     new_access_token = auth.create_access_token(payload, access_token_expires)
+    new_refresh_token = auth.create_refresh_token(payload)
 
-    blacklisted = r.get(f"blacklist:{user['id']}")
+    # delete exisitng RT if exists
+    r.delete(f"rt:whitelist:{user['id']}")
+    # add new RT to cache
+    r.set(f"rt:whitelist:{user['id']}", new_refresh_token)
 
-    if not blacklisted:
-        w_token = r.get(f"whitelist:{user['id']}")
-
-        if not w_token or auth.decode_jwt(w_token)["exp"] < datetime.now(timezone.utc):
-            r.set("whitelist", f"{user['id']}:{new_access_token}")
-            return Token(access_token=new_access_token, token_type="bearer")
-
-        return Token(access_token=w_token, token_type="bearer")
-
-    r.set("whitelist", f"{user['id']}:{new_access_token}")
-    return Token(access_token=new_access_token, token_type="bearer")
+    return Token(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+    )
 
 
-@router.get("/logout")
+@router.get("/logout", status_code=200)
 def logout_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    token_data = auth.decode_jwt(token)
-    user_id = token_data["sub"]
-
-    r.set("blacklist", f"{user_id}:{token}")
-    r.delete("whitelist", f"{user_id}:{token}")
+    d_token = auth.decode_jwt(token, refresh=False)
+    # invalidate token by removing from cache
+    r.delete(f"rt:whitelist:{d_token['sub']}")
 
     return JSONResponse(content={"message": "user successfully logged out"})
 
 
-# ! this should only be accessible through the reset email sent out by us
-@router.post("/reset-password")
+@router.post("/token/refresh", status_code=200)
+# def refresh_token(refresh_token: RefreshToken):
+def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
+    """
+    check if refresh token exists in the cache server.
+    if token doesn't exist or expired, make user login again.
+    if valid, returns a newly created access and refresh token back to user.
+    """
+    d_token = auth.decode_jwt(refresh_token, refresh=True)
+
+    valid = r.get(f"rt:whitelist:{d_token['sub']}")
+
+    if not valid or d_token["exp"] < timegm(datetime.now(timezone.utc).utctimetuple()):
+        # invalidate the token
+        r.delete(f"rt:whitelist:{d_token['sub']}")
+        return HTTPException(
+            status_code=401,
+            detail="refresh token not valid, please login again",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = {
+        "sub": d_token["sub"],
+        "iat": datetime.now(timezone.utc),
+        "email": d_token["email"],
+    }
+    new_access_token = auth.create_access_token(
+        payload, expires_in=timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
+    )
+    new_refresh_token = auth.create_refresh_token(payload)
+
+    # delete the old token and add new token to cache
+    r.delete(f"rt:whitelist:{d_token['sub']}")
+    r.set(f"rt:whitelist:{d_token['sub']}", new_refresh_token)
+
+    return Token(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+    )
+
+
+@router.post("/reset-password", status_code=201)
 def reset_password(cred: ResetPassword):
     pw_hash = auth.hash_password(cred.new_password)
     auth.verify_password(pw_hash, cred.new_password)
@@ -142,8 +184,6 @@ def reset_password(cred: ResetPassword):
 
     return JSONResponse(content={"message": "password updated successfully"})
 
-
-# @router.post("/token/refresh")
 
 # @router.get("/profile")
 

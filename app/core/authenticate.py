@@ -11,9 +11,9 @@ from jose import JWTError, jwt
 from app.queries import queries
 from app.utils import postgres_conn as pg_conn
 
-SECRET_KEY = str(os.environ.get("JWT_SECRET_KEY"))
+JWT_SECRET_KEY = str(os.environ.get("JWT_SECRET_KEY"))
+REFRESH_SECRET_KEY = str(os.environ.get("REFRESH_SECRET_KEY"))
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRATION_MIN = 30
 
 ph = PasswordHasher()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -29,9 +29,9 @@ def verify_password(hash, pw):
     return ph.verify(hash, pw)
 
 
-def get_user(email: str):
+def get_user(identifier: str):
     conn = pg_conn.create_db_conn()
-    user = conn.execute(queries.get_user, (email,)).fetchone()
+    user = conn.execute(queries.get_user, (identifier,)).fetchone()
     conn.close()
 
     return user
@@ -47,12 +47,18 @@ def authenticate_user(email: str, password: str):
     return user
 
 
-def encode_jwt(data):
-    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+def encode_jwt(data: dict, refresh: bool):
+    if refresh:
+        return jwt.encode(data, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+
+    return jwt.encode(data, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_jwt(token):
-    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+def decode_jwt(token: str, refresh: bool):
+    if refresh:
+        return jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+
+    return jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
 
 
 def create_access_token(data: dict, expires_in: timedelta | None = None):
@@ -63,9 +69,18 @@ def create_access_token(data: dict, expires_in: timedelta | None = None):
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     to_encode.update({"exp": expire})
-    encoded_jwt = encode_jwt(to_encode)
+    encoded_jwt = encode_jwt(to_encode, refresh=False)
 
     return encoded_jwt
+
+
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=365)
+    to_encode.update({"exp": expire})
+    refresh_token = encode_jwt(to_encode, refresh=True)
+
+    return refresh_token
 
 
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -76,7 +91,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     )
 
     try:
-        payload = decode_jwt(token)
+        payload = decode_jwt(token, refresh=False)
         user_email = payload["email"]
         if user_email is None:
             raise cred_exception
