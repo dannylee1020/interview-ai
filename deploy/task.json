@@ -43,6 +43,18 @@
             {
                 "name": "JWT_SECRET_KEY",
                 "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/jwt_secret-YLTByD:JWT_SECRET_KEY::"
+            },
+            {
+                "name": "REDIS_HOST",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:REDIS_HOST::"
+            },
+            {
+                "name": "REDIS_PORT",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:REDIS_PORT::"
+            },
+            {
+                "name": "REDIS_PW",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:REDIS_PW::"
             }
         ],
         "portMappings": [

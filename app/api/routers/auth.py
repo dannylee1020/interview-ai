@@ -23,7 +23,13 @@ ACCESS_TOKEN_EXPIRATION_MIN = 30
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/auth")
 
-r = redis.Redis(host="redis_dev", port=6379, db=0)
+
+r = redis.Redis(
+    host=os.environ.get("REDIS_HOST"),
+    port=os.environ.get("REDIS_PORT"),
+    password=os.environ.get("REDIS_PW"),
+)
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 

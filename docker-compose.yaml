@@ -22,3 +22,4 @@ services:
     container_name: redis_dev
     ports:
       - 6379:6379
+    command: /bin/sh -c "redis-server --requirepass ${REDIS_PW}"
