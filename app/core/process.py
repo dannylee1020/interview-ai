@@ -24,11 +24,11 @@ async def summarize_context(context: list):
     return new_context
 
 
-async def chat_completion(message: list, stream: bool = False):
+async def chat_completion(message: list, model: str, stream: bool = False):
     logging.info("Sending request to the chat completion endpoint...")
 
     response = await client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model=model,
         messages=message,
         stream=stream,
     )

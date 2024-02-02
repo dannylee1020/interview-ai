@@ -4,10 +4,11 @@ import logging
 import os
 import re
 import time
+from typing import Annotated
 
 import openai
 import respx
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from openai import AsyncOpenAI
 
 from app.core.process import chat_completion, speech_to_text, text_to_speech
@@ -22,11 +23,15 @@ PROMPT_FILEPATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "prompt", "prompt.json")
 )
 
-# ! This is a proected resource. Need to check access token for all users.
+# ! This is a protected route. Need to check access token for all users.
 
 
 @router.websocket("/")
-async def ws_chat_audio(ws: WebSocket, id: str | None = None):
+async def ws_chat_audio(
+    ws: WebSocket,
+    id: str | None = None,
+    model: str | None = None,
+):
     """
     This endpoint sends and receives audio bytes
     The endpoint is responsible for STT and TTS,
@@ -35,7 +40,7 @@ async def ws_chat_audio(ws: WebSocket, id: str | None = None):
     The id has the followin format - session_id:client_id
     where clilent_id has two fixed values: client-main and client-code
 
-    session_id helps server to identify which clients belong to the same session
+    session_id helps server to identify which clients belong in the same session
     client_id helps identify what data to send to each client in the same session
     """
     session_id = id.split(":")[0]
@@ -59,7 +64,10 @@ async def ws_chat_audio(ws: WebSocket, id: str | None = None):
             transcript = await speech_to_text(audio_data)
             context.append({"role": "user", "content": transcript})
 
-            response = await chat_completion(context, stream=False)
+            logging.info(f"************{model}************")
+            response = await chat_completion(
+                context, model=model or "gpt-3.5-turbo", stream=False
+            )
             context.append({"role": "assistant", "content": response})
 
             # send coding question portion to the relevant client

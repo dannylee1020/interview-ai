@@ -28,7 +28,7 @@ tasks:
   connect-dev-db:
     cmds:
       - psql -h localhost -p 5432 -U postgres -d postgres
-  redis-cli:
+  redis-cli-dev:
     cmds:
       - docker exec -it {{.CONTAINER_ID}} redis-cli
     vars:
