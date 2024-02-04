@@ -15,6 +15,7 @@ REMOTE_SERVER_BASE_URL = (
     "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000"
 )
 LOCAL_SERVER_BASE_URL = "ws://localhost:8000"
+ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1OGQxZmQ3Zi1mNzhiLTQyZTAtYmY4ZS04MGQyODg5MDc2ZWQiLCJpYXQiOjE3MDcwODcwMzAsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzA4NzYzMH0.MyS0hahxTsEIbFOytIwhUIQ8LAuUZ_DQFPs8nThSkcA"
 
 
 def test_websocket():
@@ -26,7 +27,7 @@ def test_websocket():
 
 
 async def test_main():
-    url = f"{LOCAL_SERVER_BASE_URL}/chat/?id={TEST_MAIN_CLIENT}"
+    url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
