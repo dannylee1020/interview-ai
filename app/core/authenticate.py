@@ -111,10 +111,3 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         raise cred_exception
 
     return user
-
-
-if __name__ == "__main__":
-    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1OGQxZmQ3Zi1mNzhiLTQyZTAtYmY4ZS04MGQyODg5MDc2ZWQiLCJpYXQiOjE3MDcwNzU3ODgsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzA3NTk2OH0.Zp6fvHmdWc_L3paWBJvWRVByd8kEKi9BgykuiQG9Rd8"
-
-    d_token = decode_jwt(token, refresh=False)
-    print(d_token)
