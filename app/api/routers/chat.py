@@ -4,13 +4,17 @@ import logging
 import os
 import re
 import time
+from calendar import timegm
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import openai
 import respx
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+import websockets
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException
 from openai import AsyncOpenAI
 
+from app.core.authenticate import decode_jwt
 from app.core.process import chat_completion, speech_to_text, text_to_speech
 from app.utils import conn_manager, helper
 
@@ -23,12 +27,11 @@ PROMPT_FILEPATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "prompt", "prompt.json")
 )
 
-# ! This is a protected route. Need to check access token for all users.
-
 
 @router.websocket("/")
 async def ws_chat_audio(
     ws: WebSocket,
+    token: str,
     id: str | None = None,
     model: str | None = None,
 ):
@@ -43,6 +46,13 @@ async def ws_chat_audio(
     session_id helps server to identify which clients belong in the same session
     client_id helps identify what data to send to each client in the same session
     """
+    # validate token for authorization
+    try:
+        d_token = decode_jwt(token, refresh=False)
+    except Exception as e:
+        logging.error(f"Exception raised in decoding jwt: {e}")
+        raise WebSocketException(code=1008, reason=e)
+
     session_id = id.split(":")[0]
     client_id = id.split(":")[1]
 
