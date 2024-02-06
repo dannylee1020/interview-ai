@@ -26,9 +26,10 @@ jobs:
             app:
               - 'Dockerfile'
               - 'app/**'
-              - '.github/workflows/config.yaml'
             migration:
               - 'migrations/**'
+            test:
+              - '.github/workflows/config.yaml'
 
   build-and-deploy:
     needs: changes
@@ -104,7 +105,7 @@ jobs:
 
   run-test:
     needs: changes
-    if: ${{needs.changes.outputs.app == 'true'}}
+    if: ${{needs.changes.outputs.test == 'true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -119,7 +120,8 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 - --git https://github.com/python-poetry/poetry.git@master
           poetry install
-          source $HOME/.poetry/env
 
       - name: Run test
-        run: pytest --ignore=tests/test_ws.py
+        run: |
+          poetry shell
+          pytest --ignore=tests/test_ws.py
