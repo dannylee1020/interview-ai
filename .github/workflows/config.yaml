@@ -26,7 +26,7 @@ jobs:
             app:
               - 'Dockerfile'
               - 'app/**'
-              -'.github/workflows/config.yaml'
+              - '.github/workflows/config.yaml'
             migration:
               - 'migrations/**'
 
