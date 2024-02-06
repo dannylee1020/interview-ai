@@ -124,5 +124,4 @@ jobs:
 
       - name: Run test
         run: |
-          poetry shell
           pytest --ignore=tests/test_ws.py
