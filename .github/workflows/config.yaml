@@ -124,5 +124,4 @@ jobs:
 
       - name: Run test
         run: |
-          poetry shell --no-ansi --no-interaction
-          pytest --ignore=tests/test_ws.py
+          poetry run pytest --ignore=tests/test_ws.py
