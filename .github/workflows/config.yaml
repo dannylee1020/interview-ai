@@ -12,7 +12,7 @@ jobs:
       task: ${{steps.filter.outputs.task}}
       app: ${{steps.filter.outputs.app}}
       migration: ${{steps.filter.outputs.migration}}
-      test: ${{steps.filters.outputs.test}}
+      test: ${{steps.filter.outputs.test}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
