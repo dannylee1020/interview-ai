@@ -11,7 +11,6 @@ import redis
 from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError
 from pydantic import BaseModel
 
 from app.core import authenticate as auth
@@ -64,7 +63,8 @@ class Message(BaseModel):
     response_model=Message,
     responses={
         500: {"model": Message, "description": "Internal server error"},
-        201: {"model": Message, "description": "Returns signup successful message"},
+        201: {"model": Message, "description": "Returns signup successful message"}
+        200: {"model": Message, "description": "Email already in use"},
     },
 )
 def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()]):
@@ -74,7 +74,7 @@ def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()])
     if user != None:
         return JSONResponse(
             content={
-                "message": "This email is already in use. Log in if you already have an account"
+                "message": "Email already in use"
             }
         )
 
@@ -160,9 +160,16 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
         500: {"model": Message, "description": "Internal server error"},
     },
 )
-def logout_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    d_token = auth.decode_jwt(token, refresh=False)
-    # invalidate token by removing from cache
+def logout_user(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
+    d_token, err = auth.decode_jwt(token, refresh=False)
+    if err:
+        raise HTTPException(
+            status_code=401,
+            detail="refresh token not valid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # invalidate refresh token by removing from cache
     r.delete(f"rt:whitelist:{d_token['sub']}")
 
     return JSONResponse(content={"message": "user successfully logged out"})
@@ -188,16 +195,14 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     If token doesn't exist or expired, redirect user to login.
     If valid, return new access and refresh token.
     """
-    d_token = auth.decode_jwt(refresh_token, refresh=True)
-
+    d_token, err = auth.decode_jwt(refresh_token, refresh=True)
     valid = r.get(f"rt:whitelist:{d_token['sub']}")
 
-    if not valid or d_token["exp"] < timegm(datetime.now(timezone.utc).utctimetuple()):
-        # invalidate the token
+    if not valid or err:
         r.delete(f"rt:whitelist:{d_token['sub']}")
-        return HTTPException(
+        raise HTTPException(
             status_code=401,
-            detail="refresh token not valid, please login again",
+            detail=f"refresh token not valid, please login again",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

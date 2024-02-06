@@ -8,6 +8,7 @@ from calendar import timegm
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
+import jwt
 import openai
 import respx
 import websockets
@@ -47,11 +48,10 @@ async def ws_chat_audio(
     client_id helps identify what data to send to each client in the same session
     """
     # validate token for authorization
-    try:
-        d_token = decode_jwt(token, refresh=False)
-    except Exception as e:
-        logging.error(f"Exception raised in decoding jwt: {e}")
-        raise WebSocketException(code=1008, reason=e)
+    d_token, err = decode_jwt(token, refresh=False)
+
+    if err:
+        raise WebSocketException(code=401, reason="invalid token")
 
     session_id = id.split(":")[0]
     client_id = id.split(":")[1]
@@ -102,7 +102,7 @@ async def ws_chat_audio(
                     )
 
                     if main_ws != None:
-                        await manager.send_bytes(spech_bytes, main_ws)
+                        await manager.send_bytes(speech_bytes, main_ws)
             else:
                 # text -> speech
                 speech_bytes = await text_to_speech(response)

@@ -1,12 +1,12 @@
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Tuple
 
+import jwt
 from argon2 import PasswordHasher
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 
 from app.queries import queries
 from app.utils import postgres_conn as pg_conn
@@ -54,19 +54,28 @@ def encode_jwt(data: dict, refresh: bool):
     return jwt.encode(data, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_jwt(token: str, refresh: bool):
-    if refresh:
-        return jwt.decode(
-            token,
-            REFRESH_SECRET_KEY,
-            algorithms=[ALGORITHM],
-        )
+def decode_jwt(token: str, refresh: bool) -> Tuple[str, bool]:
+    try:
+        if refresh:
+            return (
+                jwt.decode(
+                    token,
+                    REFRESH_SECRET_KEY,
+                    algorithms=[ALGORITHM],
+                ),
+                False,
+            )
 
-    return jwt.decode(
-        token,
-        JWT_SECRET_KEY,
-        algorithms=[ALGORITHM],
-    )
+        return (
+            jwt.decode(
+                token,
+                JWT_SECRET_KEY,
+                algorithms=[ALGORITHM],
+            ),
+            False,
+        )
+    except jwt.PyJWTError:
+        return None, True
 
 
 def create_access_token(data: dict, expires_in: timedelta | None = None):
@@ -84,7 +93,7 @@ def create_access_token(data: dict, expires_in: timedelta | None = None):
 
 def create_refresh_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=365)
+    expire = datetime.now(timezone.utc) + timedelta(days=90)
     to_encode.update({"exp": expire})
     refresh_token = encode_jwt(to_encode, refresh=True)
 
@@ -98,12 +107,12 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    try:
-        payload = decode_jwt(token, refresh=False)
-        user_email = payload["email"]
-        if user_email is None:
-            raise cred_exception
-    except JWTError:
+    payload, err = decode_jwt(token, refresh=False)
+    if err:
+        raise cred_exception
+
+    user_email = payload["email"]
+    if user_email is None:
         raise cred_exception
 
     user = auth.get_user(user_email)
