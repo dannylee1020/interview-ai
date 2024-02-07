@@ -74,9 +74,14 @@ async def ws_chat_audio(
             transcript = await speech_to_text(audio_data)
             context.append({"role": "user", "content": transcript})
 
+            # * this is where minhashing should happen
+
             response = await chat_completion(
                 context, model=model or "gpt-3.5-turbo", stream=False
             )
+
+            # * question and response should be saved in redis here
+
             context.append({"role": "assistant", "content": response})
 
             # send coding question portion to the relevant client
