@@ -62,9 +62,18 @@ class Message(BaseModel):
     status_code=201,
     response_model=Message,
     responses={
-        500: {"model": Message, "description": "Internal server error"},
-        201: {"model": Message, "description": "Returns signup successful message"}
-        200: {"model": Message, "description": "Email already in use"},
+        500: {
+            "model": Message,
+            "description": "Internal server error",
+        },
+        201: {
+            "model": Message,
+            "description": "Returns signup successful message",
+        },
+        200: {
+            "model": Message,
+            "description": "Email already in use",
+        },
     },
 )
 def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()]):
@@ -72,11 +81,7 @@ def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()])
     uid = uuid.uuid4()
 
     if user != None:
-        return JSONResponse(
-            content={
-                "message": "Email already in use"
-            }
-        )
+        return JSONResponse(content={"message": "Email already in use"})
 
     try:
         pw_hash = auth.hash_password(password)
