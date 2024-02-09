@@ -104,9 +104,9 @@ jobs:
       - name: Perform migration
         run: flyway migrate -url=${{ secrets.DB_URL }} -user=postgres -password=${{ secrets.DB_PASSWORD }} -locations=filesystem:./migrations
 
-  run-test:
+  run-tests:
     needs: changes
-    if: ${{needs.changes.outputs.test == 'true'}}
+    if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

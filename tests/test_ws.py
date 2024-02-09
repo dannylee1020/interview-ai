@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 
 import respx
 import websockets
@@ -15,7 +16,7 @@ REMOTE_SERVER_BASE_URL = (
     "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000"
 )
 LOCAL_SERVER_BASE_URL = "ws://localhost:8000"
-TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDcxMDUzMTksImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzEwNTQzOX0.0iwLEUTAaoTnHEdjTppeIyBuAe2pMcoqRx2rpBtF5ho"
+TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDczNzEzOTEsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzM3MzE5MX0.69j7ECfq3-jY0RWh2IyofgOAyFf3AK3XAUkmk0XXTtQ"
 
 
 def test_websocket():
@@ -27,9 +28,8 @@ def test_websocket():
 
 
 async def test_main():
-    url = (
-        f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}"
-    )
+    # url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}"
+    url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -43,6 +43,20 @@ async def test_main():
                 f.write(data)
 
             break
+
+
+async def test_latency():
+    res = []
+
+    for i in range(25):
+        s = time.time()
+        await test_main()
+        e = time.time()
+
+        res.append(e - s)
+
+    print(res)
+    print(round(sum(res) / len(res), 2))
 
 
 async def run_test(client_id):
@@ -73,5 +87,6 @@ async def test_code():
 
 
 if __name__ == "__main__":
-    asyncio.run(test_main())
+    # asyncio.run(test_main())
+    asyncio.run(test_latency())
     # asyncio.run(test_code())
