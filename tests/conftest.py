@@ -11,7 +11,7 @@ def db_conn():
     dbname = os.environ.get("DB_NAME")
     password = os.environ.get("DB_PASSWORD")
     user = os.environ.get("DB_USER")
-    host = "0.0.0.0"
+    host = "127.0.0.1"
     port = os.environ.get("DB_PORT")
 
     conn = psycopg.connect(
