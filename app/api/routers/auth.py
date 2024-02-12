@@ -57,6 +57,12 @@ class Message(BaseModel):
     message: str
 
 
+class OAuthCred(BaseModel):
+    email: str
+    token: str
+    provider: str
+
+
 @router.post(
     "/signup",
     status_code=201,
@@ -77,29 +83,39 @@ class Message(BaseModel):
     },
 )
 def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()]):
-    user = auth.get_user(email)
     uid = uuid.uuid4()
 
-    if user != None:
-        return JSONResponse(content={"message": "Email already in use"})
+    conn = pg_conn.create_db_conn()
+    user = conn.execute(queries.get_user, (email,)).fetchone()
+
+    if user and user["provider"] == "native":
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Email already in use"},
+        )
 
     try:
         pw_hash = auth.hash_password(password)
-        auth.verify_password(pw_hash, password)
+        v = auth.verify_password(pw_hash, password)
 
-        conn = pg_conn.create_db_conn()
+        if not v:
+            raise HTTPException(
+                status_code=500,
+                detail="Internal error: password does not match the supplied hash",
+            )
+
         conn.execute(
             queries.signup_user,
-            (uid, email, pw_hash, datetime.now(timezone.utc)),
+            (uid, email, pw_hash, datetime.now(timezone.utc), "native"),
         )
         conn.commit()
         conn.close()
 
-        return JSONResponse(content={"message": "user successfully created"})
+        return JSONResponse(
+            status_code=201,
+            content={"message": "user successfully created"},
+        )
 
-    except argon2.exceptions.VerifyMismatchError as e:
-        logging.error("Password does not match the supplied hash")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
     except psycopg.Error as e:
         logging.error("Error executing sql statement")
         conn.close()
@@ -127,11 +143,13 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
     refresh token and returns new access and refresh token
 
     """
+    # maybe need to distinguish between
+    # user record not existing and wrong?
     user = auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=401,
-            detail="Incorrenct username or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -157,16 +175,67 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
     )
 
 
+@router.post(
+    "/login/oauth",
+    status_code=201,
+    responses={
+        201: {
+            "model": Token,
+            "description": "user successfully validated and return tokens",
+        },
+        500: {"description": "Internal server error"},
+    },
+)
+def oauth_user(cred: OAuthCred):
+    """
+    signup user and login if first time user
+    login user if returning user
+    """
+    # * probably need to verify the token with the providers first
+    uid = uuid.uuid4()
+
+    conn = pg_conn.create_db_conn()
+    user = conn.execute(queries.get_user, (cred.email,)).fetchone()
+
+    # if first time user, create a record in the DB first
+    if not user or user["provider"] == "native":
+        conn.execute(
+            queries.signup_user,
+            (uid, cred.email, None, datetime.now(timezone.utc), cred.provider),
+        )
+        conn.commit()
+        conn.close()
+
+    payload = {
+        "sub": str(uid),
+        "iat": datetime.now(timezone.utc),
+        "email": cred.email,
+    }
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
+    new_access_token = auth.create_access_token(payload, access_token_expires)
+    new_refresh_token = auth.create_refresh_token(payload)
+
+    r.delete(f"rt:whitelist:{uid}")
+    r.set(f"rt:whitelist{uid}", new_refresh_token)
+
+    return Token(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+    )
+
+
 @router.get(
     "/logout",
     status_code=200,
     responses={
         200: {"model": Message, "description": "User successfully logs out"},
-        500: {"model": Message, "description": "Internal server error"},
+        401: {"model": Message, "description": "Unauthorized. Refresh token not valid"},
     },
 )
 def logout_user(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
-    d_token, err = auth.decode_jwt(token, refresh=False)
+    d_token, err = auth.decode_jwt(refresh_token, refresh=True)
     if err:
         raise HTTPException(
             status_code=401,
@@ -190,7 +259,7 @@ def logout_user(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
         },
         401: {
             "model": Message,
-            "description": "Refresh token is not valid, please login again",
+            "description": "Refresh token is not valid",
         },
     },
 )
@@ -201,9 +270,15 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     If valid, return new access and refresh token.
     """
     d_token, err = auth.decode_jwt(refresh_token, refresh=True)
-    valid = r.get(f"rt:whitelist:{d_token['sub']}")
+    if err:
+        raise HTTPException(
+            status_code=401,
+            detail=f"refresh token not valid, please pass in valid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    if not valid or err:
+    valid = r.get(f"rt:whitelist:{d_token['sub']}")
+    if not valid:
         r.delete(f"rt:whitelist:{d_token['sub']}")
         raise HTTPException(
             status_code=401,
@@ -240,28 +315,46 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
             "model": Message,
             "description": "Returns when password is successfully updated",
         },
-        500: {"model": Message, "description": "Internal server error"},
+        401: {
+            "model": Message,
+            "description": "user using provider can't reset password",
+        },
+        500: {"model": Message, "description": "password verification failed"},
     },
 )
 def reset_password(cred: ResetPassword):
-    try:
-        pw_hash = auth.hash_password(cred.new_password)
-        auth.verify_password(pw_hash, cred.new_password)
+    # see if this user email is associated with native login
+    conn = pg_conn.create_db_conn()
+    user = conn.execute(
+        "select * from users where email = %s and provider = %s",
+        (cred.email, "native"),
+    ).fetchone()
 
-        conn = pg_conn.create_db_conn()
-        conn.execute(
-            queries.reset_password, (pw_hash, datetime.now(timezone.utc), cred.email)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="This user uses provider for login. Can't reset password",
         )
-        conn.commit()
-        conn.close()
 
-    except Exception as e:
-        return HTTPException(
+    pw_hash = auth.hash_password(cred.new_password)
+    v = auth.verify_password(pw_hash, cred.new_password)
+
+    if not v:
+        raise HTTPException(
             status_code=500,
-            detail=f"Internal server error: {e}",
+            detail="Internal error: password does not match the supplied hash",
         )
 
-    return JSONResponse(content={"message": "password updated successfully"})
+    conn.execute(
+        queries.reset_password, (pw_hash, datetime.now(timezone.utc), cred.email)
+    )
+    conn.commit()
+    conn.close()
+
+    return JSONResponse(
+        status_code=201,
+        content={"message": "password updated successfully"},
+    )
 
 
 # @router.get("/profile")

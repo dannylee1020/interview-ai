@@ -12,7 +12,7 @@ services:
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DEV_PG_PASSWORD}
+      POSTGRES_PASSWORD: postgres
     ports:
       - 5432:5432
     volumes:
@@ -22,4 +22,4 @@ services:
     container_name: redis_dev
     ports:
       - 6379:6379
-    command: /bin/sh -c "redis-server --requirepass ${REDIS_PW}"
+    command: /bin/sh -c "redis-server --requirepass redispw"

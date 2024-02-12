@@ -1,6 +1,6 @@
 signup_user = """
-    INSERT INTO users
-    VALUES (%s, %s, %s, %s);
+    INSERT INTO users (id, email, encrypted_password, created_at, provider)
+    VALUES (%s, %s, %s, %s, %s);
 """
 
 get_user = """

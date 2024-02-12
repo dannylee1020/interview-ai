@@ -1,226 +1,140 @@
-import json
-from unittest.mock import patch
+import os
+import uuid
 
 import httpx
-import respx
 
 BASE_URL = "http://localhost:8000/auth"
-test_data = {"email": "test@example.com", "password": "password123"}
+TEST_DATA = {"email": "test-email@test.com", "password": "testpassword123"}
+TEST_FORM_DATA = {"username": "test-email@test.com", "password": "testpassword123"}
+TEST_OAUTH_DATA = {
+    "email": "test-oauth@test.com",
+    "token": "test-token-123",
+    "provider": "github",
+}
+TEST_RESET_PW = {"email": "test-email@test.com", "new_password": "newtestpassword123"}
+
+client = httpx.Client()
 
 
-@respx.mock
-def test_signup_user():
-    mock = respx.post(BASE_URL + "/auth/signup").respond(
-        status_code=201,
-        json={"message": "user successfully created"},
-    )
+def test_successful_signup_user():
+    res = client.post(BASE_URL + "/signup", data=TEST_DATA)
 
-    res = httpx.post(
-        BASE_URL + "/auth/signup",
-        data=test_data,
-    )
-
-    assert mock.called
     assert res.status_code == 201
     assert res.json() == {"message": "user successfully created"}
 
 
-@respx.mock
-def test_signup_user_email_already_exists():
-    with patch(
-        "app.core.authenticate.get_user", return_value={"id": "existing_user_id"}
-    ):
-        mock = respx.post(BASE_URL + "/signup").respond(
-            status_code=200,
-            json={"message": "Email already in use"},
-        )
+def test_duplicate_signup_email():
+    res = client.post(BASE_URL + "/signup", data=TEST_DATA)
 
-        res = httpx.post(
-            BASE_URL + "/signup",
-            data=test_data,
-        )
-
-        assert mock.called
-        assert res.status_code == 200
-        assert res.json() == {"message": "Email already in use"}
+    assert res.status_code == 200
+    assert res.json() == {"message": "Email already in use"}
 
 
-@respx.mock
-def test_signup_user_internal_server_error():
-    with patch(
-        "app.core.authenticate.hash_password", side_effect=Exception("Simulated error")
-    ):
-        mock = respx.post(BASE_URL + "/signup").respond(
-            status_code=500,
-            text="Internal server error",
-        )
-        res = httpx.post(
-            BASE_URL + "/signup",
-            data=test_data,
-        )
+def test_db_insert_signup(db_conn):
+    res = db_conn.execute(
+        "select * from users where email = 'test-email@test.com'"
+    ).fetchone()
 
-        assert mock.called
-        assert res.status_code == 500
-        assert "Internal server error" in res.text
+    assert res is not None
+    assert res["email"] == "test-email@test.com"
 
 
-@respx.mock
-def test_login_user():
-    mock = respx.post(BASE_URL + "/login").respond(
-        status_code=201,
-        json={
-            "access_token": "test-access-token",
-            "refresh_token": "test-refresh-token",
-            "token_type": "Bearer",
-        },
-    )
+def test_successful_login():
+    res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
 
-    res = httpx.post(
-        BASE_URL + "/login",
-        data=test_data,
-    )
-    assert mock.called
     assert res.status_code == 201
     assert "access_token" in res.json()
     assert "refresh_token" in res.json()
 
 
-@respx.mock
-def test_login_user_incorrect_credentials():
-    with patch("app.core.authenticate.authenticate_user", return_value=None):
-        mock = respx.post(BASE_URL + "/login").respond(
-            status_code=401,
-            text="Incorrect username or password",
-        )
-
-        res = httpx.post(
-            BASE_URL + "/login",
-            data=test_data,
-        )
-
-        assert mock.called
-        assert res.status_code == 401
-        assert "Incorrect username or password" in res.text
-
-
-@respx.mock
-def test_login_user_internal_server_error():
-    with patch(
-        "app.core.authenticate.create_access_token",
-        side_effect=Exception("Simulated error"),
-    ):
-        mock = respx.post(BASE_URL + "/login").respond(
-            status_code=500, text="Internal server error"
-        )
-
-        res = httpx.post(
-            BASE_URL + "/login",
-            data=test_data,
-        )
-        assert mock.called
-        assert res.status_code == 500
-        assert "Internal server error" in res.text
-
-
-@respx.mock
-def test_logout_user():
-    mock = respx.get(BASE_URL + "/logout").respond(
-        status_code=200,
-        json={"message": "user successfully logged out"},
+def test_incorrect_credential_login():
+    res = client.post(
+        BASE_URL + "/login",
+        data={"username": "test-email@test.com", "password": "wrongpassword123"},
     )
 
-    res = httpx.get(BASE_URL + "/logout")
+    assert res.status_code == 401
+    assert "Incorrect username or password" in res.text
 
-    assert mock.called
+
+def test_successful_oauth():
+    res = client.post(BASE_URL + "/login/oauth", json=TEST_OAUTH_DATA)
+
+    assert res.status_code == 201
+    assert "access_token" in res.json()
+    assert "refresh_token" in res.json()
+
+
+def test_oauth_db_insert(db_conn):
+    user = db_conn.execute(
+        "select * from users where email = 'test-oauth@test.com' and provider = 'github'"
+    ).fetchone()
+
+    assert user is not None
+    assert user["email"] == "test-oauth@test.com"
+
+
+def test_successful_token_refresh():
+    res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
+    res_data = res.json()
+    ref_token = res_data["refresh_token"]
+
+    headers = {"Authorization": f"Bearer {ref_token}"}
+    res = client.get(BASE_URL + "/token/refresh", headers=headers)
+
+    assert res.status_code == 200
+    assert "access_token" in res.json()
+    assert "refresh_token" in res.json()
+
+
+def test_invalid_refresh_token():
+    ref_token = uuid.uuid4()
+
+    headers = {"Authorization": f"Bearer {ref_token}"}
+    res = client.get(BASE_URL + "/token/refresh", headers=headers)
+
+    assert res.status_code == 401
+    assert "refresh token not valid" in res.text
+
+
+def test_successful_logout():
+    res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
+    data = res.json()
+    ref_token = data["refresh_token"]
+    headers = {"Authorization": f"Bearer {ref_token}"}
+
+    res = client.get(BASE_URL + "/logout", headers=headers)
+
     assert res.status_code == 200
     assert res.json() == {"message": "user successfully logged out"}
 
 
-@respx.mock
-def test_logout_user_error():
-    with patch(
-        "app.core.authenticate.decode_jwt", side_effect=Exception("Simulated error")
-    ):
-        mock = respx.get(BASE_URL + "/logout").respond(
-            status_code=500,
-            text="refresh token not valid",
-        )
+def test_successful_reset_password():
+    res = client.put(BASE_URL + "/reset-password", json=TEST_RESET_PW)
 
-        res = httpx.get(BASE_URL + "/logout")
-
-        assert mock.called
-        assert res.status_code == 500
-        assert "refresh token not valid" in res.text
-
-
-@respx.mock
-def test_refresh_token():
-    mock = respx.get(BASE_URL + "/token/refresh").respond(
-        status_code=200,
-        json={
-            "access_token": "test-access-token",
-            "refresh_token": "test-refresh-token",
-            "token_type": "Bearer",
-        },
-    )
-
-    res = httpx.get(BASE_URL + "/token/refresh")
-
-    assert mock.called
-    assert res.status_code == 200
-    assert "access_token" in res.json()
-    assert "refresh_token" in res.json()
-
-
-@respx.mock
-def test_refresh_token_exception():
-    with patch(
-        "app.core.authenticate.decode_jwt", side_effect=Exception("Simulated error")
-    ):
-        mock = respx.get(BASE_URL + "/token/refresh").respond(
-            status_code=500,
-            text="refresh token not valid, please login again",
-        )
-
-        res = httpx.get(BASE_URL + "/token/refresh")
-
-        assert mock.called
-        assert res.status_code == 500
-        assert "refresh token not valid, please login again" in res.text
-
-
-@respx.mock
-def test_reset_password():
-    mock = respx.put(BASE_URL + "/reset_password").respond(
-        status_code=201,
-        json={"message": "password updated successfully"},
-    )
-
-    res = httpx.put(
-        BASE_URL + "/reset_password",
-        json=test_data,
-    )
-
-    assert mock.called
     assert res.status_code == 201
     assert res.json() == {"message": "password updated successfully"}
 
 
-@respx.mock
-def test_reset_password_internal_server_error():
-    with patch(
-        "app.core.authenticate.hash_password", side_effect=Exception("Simulated error")
-    ):
-        mock = respx.put(BASE_URL + "/reset_password").respond(
-            status_code=500,
-            text="Internal server error",
-        )
+def test_db_update_reset_password(db_conn):
+    user = db_conn.execute(
+        "select * from users where email = %s", (TEST_RESET_PW["email"],)
+    ).fetchone()
 
-        res = httpx.put(
-            BASE_URL + "/reset_password",
-            json=test_data,
-        )
+    db_conn.close()
 
-        assert mock.called
-        assert res.status_code == 500
-        assert "Internal server error" in res.text
+    assert user is not None
+    assert user["updated_at"] is not None
+
+
+def test_invalid_reset_password():
+    res = client.put(
+        BASE_URL + "/reset-password",
+        json={"email": "test-oauth@test.com", "new_password": "testpassword"},
+    )
+
+    assert res.status_code == 401
+    assert "This user uses provider for login. Can't reset password" in res.text
+
+
+# * Add test cases for whitelisting refresh tokens in Redis

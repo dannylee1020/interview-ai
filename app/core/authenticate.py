@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Tuple
 
+import argon2
 import jwt
 from argon2 import PasswordHasher
 from fastapi import Depends, HTTPException
@@ -25,8 +26,13 @@ def hash_password(pw):
     return ph.hash(pw)
 
 
-def verify_password(hash, pw):
-    return ph.verify(hash, pw)
+def verify_password(hash, pw) -> bool:
+    try:
+        ph.verify(hash, pw)
+        return True
+    except argon2.exceptions.VerifyMismatchError:
+        logging.error("Password verification failed")
+        return False
 
 
 def get_user(identifier: str):

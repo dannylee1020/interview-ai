@@ -24,11 +24,11 @@ tasks:
       - flyway migrate -environment=prod
   migrate-dev:
     cmds:
-      - flyway migrate -environemnt=dev
+      - flyway migrate -environment=dev
   connect-dev-db:
     cmds:
       - psql -h localhost -p 5432 -U postgres -d postgres
-  redis-cli-dev:
+  connect-dev-redis:
     cmds:
       - docker exec -it {{.CONTAINER_ID}} redis-cli
     vars:

@@ -4,8 +4,6 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 
-from app.queries import queries
-
 logging.basicConfig(level=logging.INFO)
 
 

@@ -33,7 +33,7 @@ jobs:
               - '.github/workflows/config.yaml'
 
   build-and-deploy:
-    needs: changes
+    needs: [changes, run-test]
     if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
     steps:
@@ -122,6 +122,21 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 - --git https://github.com/python-poetry/poetry.git@master
           poetry install
 
+      - name: Run dev container
+        run: |
+          docker compose up -d
+
+      - name: Wait for services to be ready
+        run: |
+          until nc -z localhost 5432 && nc -z localhost 6379; do
+            echo "Waiting for services to be ready..."
+            sleep 1
+          done
+
       - name: Run test
         run: |
           poetry run pytest --ignore=tests/test_ws.py
+
+      - name: Tear down container
+        run: |
+          docker compose down

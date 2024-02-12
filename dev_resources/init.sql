@@ -6,3 +6,6 @@ CREATE TABLE public.users (
     updated_at timestamptz,
     deleted_at timestamptz
 );
+
+ALTER TABLE public.users
+ADD COLUMN provider text;
