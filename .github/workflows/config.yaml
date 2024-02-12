@@ -33,7 +33,7 @@ jobs:
               - '.github/workflows/config.yaml'
 
   build-and-deploy:
-    needs: [changes, run-test]
+    needs: [changes, run-tests]
     if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
     steps:
