@@ -36,7 +36,7 @@ jobs:
 
   build-and-deploy:
     needs: [changes, run-tests]
-    if: ${{needs.changes.outputs.test == 'true'}}
+    if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -108,7 +108,7 @@ jobs:
 
   run-tests:
     needs: changes
-    if: ${{needs.changes.outputs.test == 'true'}}
+    if: ${{needs.changes.outputs.app == 'true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

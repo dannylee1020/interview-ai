@@ -16,19 +16,6 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       JWT_SCRET_KEY: ${JWT_SECRET_KEY}
       REFRESH_SECRET_KEY: ${REFRESH_SECRET_KEY}
-
-      # - PYTHONPATH=/app
-      # - DB_NAME=postgres
-      # - DB_HOST=postgres_dev
-      # - DB_PORT=5432
-      # - DB_USER=postgres
-      # - DB_PASSWORD=postgres
-      # - REDIS_HOST=redis_dev
-      # - REDIS_PORT=6379
-      # - REDIS_PW=redispw
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # - JWT_SCRET_KEY=${JWT_SECRET_KEY}
-      # - REFRESH_SECRET_KEY=${REFRESH_SECRET_KEY}
   postgres:
     image: postgres
     container_name: postgres_dev

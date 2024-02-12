@@ -10,7 +10,14 @@ tasks:
   down:
     cmds:
       - docker compose down
-  exec:
+  ssh-dev:
+    cmds:
+      - docker exec -it {{ .CONTAINER_ID }} /bin/bash
+    vars:
+      CONTAINER_ID:
+        sh: docker ps -qf "name=interview-ai-api-1"
+
+  ssh-prod:
     cmds:
       - aws ecs execute-command --cluster interview-ai-server --task {{.TASK_ARN}} --container interview-ai-server --interactive --command "/bin/bash"
     vars:
