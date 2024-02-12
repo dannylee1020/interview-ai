@@ -8,11 +8,11 @@ from psycopg.rows import dict_row
 
 @pytest.fixture(scope="session")
 def db_conn():
-    dbname = os.environ.get("DB_NAME")
-    password = os.environ.get("DB_PASSWORD")
-    user = os.environ.get("DB_USER")
+    dbname = "postgres"
+    password = "postgres"
+    user = "postgres"
     host = "127.0.0.1"
-    port = os.environ.get("DB_PORT")
+    port = "5432"
 
     conn = psycopg.connect(
         dbname=dbname,
