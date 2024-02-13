@@ -32,7 +32,7 @@ jobs:
             migration:
               - 'migrations/**'
             test:
-              - '.github/workflows/config.yaml'
+              - 'tests/**'
 
   build-and-deploy:
     needs: [changes, run-tests]
@@ -108,7 +108,7 @@ jobs:
 
   run-tests:
     needs: changes
-    if: ${{needs.changes.outputs.app == 'true'}}
+    if: ${{needs.changes.outputs.app == 'true'}} || ${{needs.changes.outputs.test == 'true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

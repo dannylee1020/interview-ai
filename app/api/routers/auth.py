@@ -217,7 +217,7 @@ def oauth_user(cred: OAuthCred):
     new_refresh_token = auth.create_refresh_token(payload)
 
     r.delete(f"rt:whitelist:{uid}")
-    r.set(f"rt:whitelist{uid}", new_refresh_token)
+    r.set(f"rt:whitelist:{uid}", new_refresh_token)
 
     return Token(
         access_token=new_access_token,
@@ -277,6 +277,7 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # check whitelist in cache to validate token
     valid = r.get(f"rt:whitelist:{d_token['sub']}")
     if not valid:
         r.delete(f"rt:whitelist:{d_token['sub']}")

@@ -39,12 +39,19 @@ def test_db_insert_signup(db_conn):
     assert res["email"] == "test-email@test.com"
 
 
-def test_successful_login():
+def test_successful_login(db_conn, redis_conn):
     res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
+    res_data = res.json()
+
+    db_data = db_conn.execute(
+        "select * from users where email = 'test-email@test.com'"
+    ).fetchone()
+    r_token = redis_conn.get(f"rt:whitelist:{db_data['id']}")
 
     assert res.status_code == 201
     assert "access_token" in res.json()
     assert "refresh_token" in res.json()
+    assert r_token.decode("utf-8") == res_data["refresh_token"]
 
 
 def test_incorrect_credential_login():
@@ -57,12 +64,19 @@ def test_incorrect_credential_login():
     assert "Incorrect username or password" in res.text
 
 
-def test_successful_oauth():
+def test_successful_oauth(db_conn, redis_conn):
     res = client.post(BASE_URL + "/login/oauth", json=TEST_OAUTH_DATA)
+    res_data = res.json()
+
+    db_data = db_conn.execute(
+        "select * from users where email = 'test-oauth@test.com' and provider != 'native'"
+    ).fetchone()
+    r_token = redis_conn.get(f"rt:whitelist:{db_data['id']}")
 
     assert res.status_code == 201
     assert "access_token" in res.json()
     assert "refresh_token" in res.json()
+    assert r_token.decode("utf-8") == res_data["refresh_token"]
 
 
 def test_oauth_db_insert(db_conn):
@@ -97,16 +111,38 @@ def test_invalid_refresh_token():
     assert "refresh token not valid" in res.text
 
 
-def test_successful_logout():
+def test_refresh_token_is_blacklisted(redis_conn):
+    res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
+    res_data = res.json()
+    old_token = res_data["refresh_token"]
+
+    headers = {"Authorization": f"Bearer {old_token}"}
+    client.get(BASE_URL + "/logout", headers=headers)
+
+    ref_res = client.get(BASE_URL + "/token/refresh", headers=headers)
+
+    assert ref_res.status_code == 401
+    assert "please login again" in ref_res.text
+
+
+def test_successful_logout(redis_conn, db_conn):
     res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
     data = res.json()
     ref_token = data["refresh_token"]
-    headers = {"Authorization": f"Bearer {ref_token}"}
 
+    db_res = db_conn.execute(
+        "select * from users where email = 'test-email@test.com'"
+    ).fetchone()
+
+    headers = {"Authorization": f"Bearer {ref_token}"}
     res = client.get(BASE_URL + "/logout", headers=headers)
+
+    # check cache
+    c = redis_conn.get(f"rt:whitelist:{db_res['id']}")
 
     assert res.status_code == 200
     assert res.json() == {"message": "user successfully logged out"}
+    assert c is None
 
 
 def test_successful_reset_password():
@@ -135,6 +171,3 @@ def test_invalid_reset_password():
 
     assert res.status_code == 401
     assert "This user uses provider for login. Can't reset password" in res.text
-
-
-# * Add test cases for whitelisting refresh tokens in Redis

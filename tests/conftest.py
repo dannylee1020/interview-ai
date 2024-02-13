@@ -28,7 +28,7 @@ def db_conn():
 
 @pytest.fixture(scope="session")
 def redis_conn():
-    host = "redis_dev"
+    host = "127.0.0.1"
     port = "6379"
     password = "redispw"
 
