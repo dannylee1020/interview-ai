@@ -3,7 +3,7 @@ import uuid
 
 import httpx
 
-BASE_URL = "http://localhost:8000/auth"
+BASE_URL = "http://127.0.0.1:8000/auth"
 TEST_DATA = {"email": "test-email@test.com", "password": "testpassword123"}
 TEST_FORM_DATA = {"username": "test-email@test.com", "password": "testpassword123"}
 TEST_OAUTH_DATA = {
