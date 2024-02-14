@@ -37,7 +37,7 @@ jobs:
 
   build-and-deploy:
     needs: [changes, run-tests]
-    if: github.ref_name == 'main' && ${{needs.changes.outputs.app == 'true'}}
+    if: ${{ (github.ref_name == 'main') && (needs.changes.outputs.app == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -72,7 +72,7 @@ jobs:
 
   update-ecs-task:
     needs: changes
-    if: github.ref_name == 'main' && ${{needs.changes.outputs.task == 'true'}}
+    if: ${{ (github.ref_name == 'main') && (needs.changes.outputs.task == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -94,7 +94,7 @@ jobs:
 
   run-migration:
     needs: changes
-    if: github.ref_name == 'main' && ${{needs.changes.outputs.migration == 'true'}}
+    if: ${{ (github.ref_name == 'main') && (needs.changes.outputs.migration == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
