@@ -13,7 +13,7 @@ TEST_OAUTH_DATA = {
 }
 TEST_RESET_PW = {"email": "test-email@test.com", "new_password": "newtestpassword123"}
 
-client = httpx.Client(timeout=None)
+client = httpx.Client()
 
 
 def test_successful_signup_user():

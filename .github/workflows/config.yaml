@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'dev'
   workflow_dispatch:
 
 
@@ -36,7 +37,7 @@ jobs:
 
   build-and-deploy:
     needs: [changes, run-tests]
-    if: ${{needs.changes.outputs.app == 'true'}}
+    if: ${{needs.changes.outputs.app == 'true'}} && github.ref_name == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,7 +72,7 @@ jobs:
 
   update-ecs-task:
     needs: changes
-    if: ${{needs.changes.outputs.task == 'true'}}
+    if: ${{needs.changes.outputs.task == 'true'}} && github.ref_name == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -93,7 +94,7 @@ jobs:
 
   run-migration:
     needs: changes
-    if: ${{needs.changes.outputs.migration == 'true'}}
+    if: ${{needs.changes.outputs.migration == 'true'}} && github.ref_name == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
