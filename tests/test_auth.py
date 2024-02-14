@@ -137,7 +137,6 @@ def test_successful_logout(redis_conn, db_conn):
     headers = {"Authorization": f"Bearer {ref_token}"}
     res = client.get(BASE_URL + "/logout", headers=headers)
 
-    # check cache
     c = redis_conn.get(f"rt:whitelist:{db_res['id']}")
 
     assert res.status_code == 200
