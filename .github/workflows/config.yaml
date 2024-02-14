@@ -134,12 +134,13 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
-          until nc -z localhost 5432 && nc -z localhost 6379 && nc -z localhost 8000; do
-            sleep 3
+          while ! curl -s http://localhost:8000/healthcheck > /dev/null; do
+            echo "Waiting for server..."
+            sleep 5
           done
 
       - name: Check if test container is accessible
-        run: curl http://localhost:8000/healthcheck
+        run: curl http://127.0.0.1:8000/healthcheck
 
       - name: Run test
         run: |
