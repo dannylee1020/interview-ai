@@ -135,7 +135,7 @@ jobs:
       - name: Wait for services to be ready
         run: |
           until nc -z localhost 5432 && nc -z localhost 6379 && nc -z localhost 8000; do
-            sleep 1
+            sleep 5
           done
 
       - name: Run test
