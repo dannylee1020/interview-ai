@@ -65,7 +65,6 @@ jobs:
         id: push-image
         run: |
           docker push 077860636820.dkr.ecr.us-east-1.amazonaws.com/interview-ai:latest
-
       - name: Deploy to ECS
         run: |
           aws ecs update-service --cluster interview-ai-server --service service-api --task-definition run-container --enable-execute-command --force-new-deployment
@@ -138,6 +137,9 @@ jobs:
           until nc -z localhost 5432 && nc -z localhost 6379 && nc -z localhost 8000; do
             sleep 3
           done
+
+      - name: Check if test container is accessible
+        run: curl http://localhost:8000/healthcheck
 
       - name: Run test
         run: |
