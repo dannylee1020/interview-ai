@@ -297,7 +297,6 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     )
     new_refresh_token = auth.create_refresh_token(payload)
 
-    # delete the old token and add new token to cache
     r.delete(f"rt:whitelist:{d_token['sub']}")
     r.set(f"rt:whitelist:{d_token['sub']}", new_refresh_token)
 
