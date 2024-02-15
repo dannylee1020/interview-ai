@@ -23,6 +23,8 @@ psycopg = {extras = ["binary"], version = "^3.1.17"}
 redis = "^5.0.1"
 pyjwt = "^2.8.0"
 pytest = "^8.0.0"
+google-auth = "^2.27.0"
+requests = "^2.31.0"
 
 [build-system]
 requires = ["poetry-core"]

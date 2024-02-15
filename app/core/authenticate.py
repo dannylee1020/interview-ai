@@ -4,10 +4,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Tuple
 
 import argon2
+import httpx
 import jwt
 from argon2 import PasswordHasher
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from google.auth.transport import requests
+from google.oauth2 import id_token
 
 from app.queries import queries
 from app.utils import postgres_conn as pg_conn
@@ -35,16 +38,15 @@ def verify_password(hash, pw) -> bool:
         return False
 
 
-def get_user(identifier: str):
+def authenticate_user(id: str, password: str):
     conn = pg_conn.create_db_conn()
-    user = conn.execute(queries.get_user, (identifier,)).fetchone()
+    user_email = conn.execute("select * from users where email = %s", (id,)).fetchone()
+    user_username = conn.execute(
+        "select * from users where username = %s", (id,)
+    ).fetchone()
     conn.close()
 
-    return user
-
-
-def authenticate_user(email: str, password: str):
-    user = get_user(email)
+    user = user_email or user_username
 
     if not user:
         return False
@@ -106,6 +108,36 @@ def create_refresh_token(data: dict):
     return refresh_token
 
 
+def verify_provider_token(provider: str, token: str) -> bool:
+    if provider == "github":
+        client_id = os.environ.get("GITHUB_CLIENT_ID")
+        client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
+
+        headers = {
+            "Accept": "application/vnd.github+json",
+        }
+        http_auth = (client_id, client_secret)
+        res = httpx.post(
+            f"https://api.github.com/applications/{client_id}/token",
+            json={"access_token": token},
+            headers=headers,
+            auth=http_auth,
+        )
+
+        if res.status_code != 200:
+            return True
+
+        return False
+    else:
+        client_id = os.environ.get("GOOGLE_CLIENT_ID")
+        try:
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), client_id)
+            return False
+
+        except ValueError:
+            return True
+
+
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     cred_exception = HTTPException(
         status_code=401,
@@ -121,7 +153,12 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     if user_email is None:
         raise cred_exception
 
-    user = auth.get_user(user_email)
+    conn = pg_conn.create_db_conn()
+    user = conn.execute(
+        "select * from users where email = %s", (user_email,)
+    ).fetchone()
+    conn.close()
+
     if user is None:
         raise cred_exception
 

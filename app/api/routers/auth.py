@@ -59,6 +59,7 @@ class Message(BaseModel):
 
 class OAuthCred(BaseModel):
     email: str
+    name: str
     token: str
     provider: str
 
@@ -82,16 +83,31 @@ class OAuthCred(BaseModel):
         },
     },
 )
-def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()]):
+def signup_user(
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    username: Annotated[str, Form()],
+):
     uid = uuid.uuid4()
 
     conn = pg_conn.create_db_conn()
-    user = conn.execute(queries.get_user, (email,)).fetchone()
+    user_email = conn.execute(
+        "select * from users where email = %s", (email,)
+    ).fetchone()
+    user_username = conn.execute(
+        "select * from users where username = %s", (username,)
+    ).fetchone()
 
-    if user and user["provider"] == "native":
+    if user_email and user_email["provider"] == "native":
         return JSONResponse(
             status_code=200,
             content={"message": "Email already in use"},
+        )
+
+    if user_username:
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Username already in use"},
         )
 
     try:
@@ -106,7 +122,7 @@ def signup_user(email: Annotated[str, Form()], password: Annotated[str, Form()])
 
         conn.execute(
             queries.signup_user,
-            (uid, email, pw_hash, datetime.now(timezone.utc), "native"),
+            (uid, email, pw_hash, datetime.now(timezone.utc), "native", username, None),
         )
         conn.commit()
         conn.close()
@@ -188,20 +204,34 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
 )
 def oauth_user(cred: OAuthCred):
     """
-    signup user and login if first time user
-    login user if returning user
+    signup user and login if first time user.
+    login user if returning user.
     """
-    # * probably need to verify the token with the providers first
+    # validate token with provider
+    err = auth.verify_provider_token(cred.provider, cred.token)
+    if err:
+        raise HTTPException(status_code=401, detail="Provider token not valid")
+
     uid = uuid.uuid4()
 
     conn = pg_conn.create_db_conn()
-    user = conn.execute(queries.get_user, (cred.email,)).fetchone()
+    user = conn.execute(
+        "select * from users where email = %s", (cred.email,)
+    ).fetchone()
 
     # if first time user, create a record in the DB first
     if not user or user["provider"] == "native":
         conn.execute(
             queries.signup_user,
-            (uid, cred.email, None, datetime.now(timezone.utc), cred.provider),
+            (
+                uid,
+                cred.email,
+                None,
+                datetime.now(timezone.utc),
+                cred.provider,
+                None,
+                cred.name,
+            ),
         )
         conn.commit()
         conn.close()

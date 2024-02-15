@@ -9,3 +9,7 @@ CREATE TABLE public.users (
 
 ALTER TABLE public.users
 ADD COLUMN provider text;
+
+ALTER TABLE public.users
+ADD COLUMN username text,
+ADD COLUMN name text;

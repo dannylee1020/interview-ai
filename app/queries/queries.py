@@ -1,13 +1,6 @@
 signup_user = """
-    INSERT INTO users (id, email, encrypted_password, created_at, provider)
-    VALUES (%s, %s, %s, %s, %s);
-"""
-
-get_user = """
-    SELECT
-        *
-    FROM users
-    WHERE email = %s;
+    INSERT INTO users (id, email, encrypted_password, created_at, provider, username, name)
+    VALUES (%s, %s, %s, %s, %s, %s, %s);
 """
 
 reset_password = """
