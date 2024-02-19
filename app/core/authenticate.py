@@ -109,7 +109,7 @@ def create_refresh_token(data: dict):
 
 
 def verify_provider_token(provider: str, token: str) -> bool:
-    if os.environ.get("TEST_ENV"):
+    if os.environ.get("TEST_ENV") == "true":
         return False
 
     if provider == "github":
