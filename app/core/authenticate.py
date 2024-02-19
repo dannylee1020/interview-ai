@@ -109,6 +109,9 @@ def create_refresh_token(data: dict):
 
 
 def verify_provider_token(provider: str, token: str) -> bool:
+    if os.environ.get("TEST_ENV"):
+        return False
+
     if provider == "github":
         client_id = os.environ.get("GITHUB_CLIENT_ID")
         client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
