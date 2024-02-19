@@ -131,7 +131,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           JWT_SCRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           REFRESH_SECRET_KEY: ${{ secrets.REFRESH_SECRET_KEY }}
-          TEST_ENV: True
+          TEST_ENV: true
 
       - name: Wait for services to be ready
         run: |
