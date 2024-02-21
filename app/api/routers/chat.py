@@ -18,15 +18,11 @@ from openai import AsyncOpenAI
 from app.core.authenticate import decode_jwt
 from app.core.process import chat_completion, speech_to_text, text_to_speech
 from app.utils import conn_manager, helper
+from prompt import prompt
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/chat")
 manager = conn_manager.ConnectionManager()
-
-
-PROMPT_FILEPATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "prompt", "prompt.json")
-)
 
 
 @router.websocket("/")
@@ -62,21 +58,17 @@ async def ws_chat_audio(
     await manager.connect(session_id, client_id, ws)
 
     if context == []:
-        prompt = helper.get_prompt(PROMPT_FILEPATH)
-        context.extend(prompt)
+        context.extend(prompt.system_prompt)
 
     try:
         while True:
             audio_data = await manager.receive_bytes(ws)
-
             logging.info("Received data from client...")
             # speech -> text
             transcript = await speech_to_text(audio_data)
             context.append({"role": "user", "content": transcript})
 
-            response = await chat_completion(
-                context, model=model or "gpt-3.5-turbo", stream=False
-            )
+            response = await chat_completion(context, model=model, stream=False)
 
             context.append({"role": "assistant", "content": response})
 
@@ -112,8 +104,8 @@ async def ws_chat_audio(
                 # ? Stream audio to frontend to "fake" the latency?
                 await manager.send_bytes(speech_bytes, ws)
 
-            if len(context) > 50:
-                context = context[25:]
+            # if len(context) > 50:
+            #     context = context[25:]
 
     except openai.AuthenticationError as e:
         print("Error authenticating. Check your OpenAI API key")
@@ -128,11 +120,18 @@ async def ws_chat_audio(
 
 
 @router.websocket("/test/multiple-clients/")
-async def ws_chat_audio_test(ws: WebSocket, id: str | None = None):
+async def ws_chat_audio_test(
+    ws: WebSocket,
+    id: str | None = None,
+    model: str | None = None,
+):
     """
     testing-only endpoint that mocks the response from chat completion api
     and tests for sending different messages to multiple clients
     """
+
+    session_id = id.split(":")[0]
+    client_id = id.split(":")[1]
 
     context = manager.client_context.get(client_id, [])
 
@@ -140,10 +139,9 @@ async def ws_chat_audio_test(ws: WebSocket, id: str | None = None):
     await manager.connect(session_id, client_id, ws)
 
     if context == []:
-        prompt = helper.get_prompt(PROMPT_FILEPATH)
-        context.extend(prompt)
+        context.extend(prompt.system_prompt)
 
-    mock_response = {
+    openai_response = {
         "choices": [
             {
                 "message": {
@@ -152,6 +150,12 @@ async def ws_chat_audio_test(ws: WebSocket, id: str | None = None):
             }
         ]
     }
+
+    llama_response = [
+        {
+            "generated_text": "Let's dive right into the technical interview. Problem 1: Two Sum --"
+        }
+    ]
 
     try:
         while True:
@@ -162,11 +166,20 @@ async def ws_chat_audio_test(ws: WebSocket, id: str | None = None):
             transcript = await speech_to_text(audio_data)
             context.append({"role": "user", "content": transcript})
 
-            with respx.mock:
-                respx.post("https://api.openai.com/v1/chat/completions").respond(
-                    json=mock_response
-                )
-                response = await chat_completion(context, stream=False)
+            if "gpt" in model:
+                with respx.mock:
+                    respx.post("https://api.openai.com/v1/chat/completions").respond(
+                        json=openai_response
+                    )
+                    response = await chat_completion(context, model=model, stream=False)
+            else:
+                with respx.mock:
+                    respx.post(
+                        "https://h73fzi2bqis5md8e.us-east-1.aws.endpoints.huggingface.cloud"
+                    ).respond(json=llama_response)
+
+                    response = await chat_completion(context, model=model, stream=False)
+                    print(response)
 
             context.append({"role": "assistant", "content": response})
 

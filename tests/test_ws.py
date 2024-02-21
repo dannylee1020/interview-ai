@@ -12,11 +12,13 @@ from app.utils import helper
 
 TEST_MAIN_CLIENT = "test-session-id-123:client-main"
 TEST_CODE_CLIENT = "test-session-id-789:client-code"
+TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDczNzEzOTEsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzM3MzE5MX0.69j7ECfq3-jY0RWh2IyofgOAyFf3AK3XAUkmk0XXTtQ"
+# TEST_MODEL = "gpt-3.5-turbo"
+TEST_MODEL = "llama2"
 REMOTE_SERVER_BASE_URL = (
     "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000"
 )
 LOCAL_SERVER_BASE_URL = "ws://localhost:8000"
-TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDczNzEzOTEsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzM3MzE5MX0.69j7ECfq3-jY0RWh2IyofgOAyFf3AK3XAUkmk0XXTtQ"
 
 
 def test_websocket():
@@ -28,8 +30,7 @@ def test_websocket():
 
 
 async def test_main():
-    # url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}"
-    url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}"
+    url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -60,7 +61,7 @@ async def test_latency():
 
 
 async def run_test(client_id):
-    url = f"{LOCAL_SERVER_BASE_URL}/chat/test/?id={client_id}"
+    url = f"{LOCAL_SERVER_BASE_URL}/chat/test/multiple-clients/?id={client_id}&model={TEST_MODEL}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -88,5 +89,5 @@ async def test_code():
 
 if __name__ == "__main__":
     # asyncio.run(test_main())
-    asyncio.run(test_latency())
-    # asyncio.run(test_code())
+    # asyncio.run(test_latency())
+    asyncio.run(test_code())

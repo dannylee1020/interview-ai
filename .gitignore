@@ -7,3 +7,4 @@ files
 .venv
 *.DS_Store
 *.pyc
+dev_resources/script.py
