@@ -88,6 +88,6 @@ async def test_code():
 
 
 if __name__ == "__main__":
-    # asyncio.run(test_main())
+    asyncio.run(test_main())
     # asyncio.run(test_latency())
-    asyncio.run(test_code())
+    # asyncio.run(test_code())
