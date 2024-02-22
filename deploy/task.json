@@ -55,7 +55,13 @@
             {
                 "name": "REDIS_PW",
                 "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/db-credentials-T56DfS:REDIS_PW::"
+            },
+            {
+                "name": "HF_ACCESS_TOKEN",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/hf-inference-endpoint-XmOuVK:HF_ACCESS_TOKEN::"
+
             }
+
         ],
         "portMappings": [
             {

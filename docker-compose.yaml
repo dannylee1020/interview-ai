@@ -20,6 +20,7 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       TEST_ENV: ${TEST_ENV}
+      HF_ACCESS_TOKEN: ${HF_ACCESS_TOKEN}
   postgres:
     image: postgres
     container_name: postgres_dev

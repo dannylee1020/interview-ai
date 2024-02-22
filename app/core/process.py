@@ -35,7 +35,7 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
         url = "https://h73fzi2bqis5md8e.us-east-1.aws.endpoints.huggingface.cloud"
         headers = {
             "Accept": "application/json",
-            "Authorization": "Bearer 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",
+            "Authorization": f"Bearer {os.environ.get("HF_ACCESS_TOKEN")}",
             "Content-Type": "application/json",
         }
 
