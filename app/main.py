@@ -3,7 +3,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
-from app.api.routers import auth, chat
+from app.routers import auth, chat
 from app.utils import helper
 
 app = FastAPI()
