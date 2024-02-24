@@ -12,7 +12,8 @@ from app.utils import helper
 
 TEST_MAIN_CLIENT = "test-session-id-123:client-main"
 TEST_CODE_CLIENT = "test-session-id-789:client-code"
-TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDczNzEzOTEsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzM3MzE5MX0.69j7ECfq3-jY0RWh2IyofgOAyFf3AK3XAUkmk0XXTtQ"
+# TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDczNzEzOTEsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzM3MzE5MX0.69j7ECfq3-jY0RWh2IyofgOAyFf3AK3XAUkmk0XXTtQ"
+TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYWE2NTk3NC02MjUxLTQxMTQtYTE2NC0zNDBiY2JhZmE0MWUiLCJpYXQiOjE3MDg2MTYxNDEsImVtYWlsIjoidGVzdDEyM0BnbWFpbC5jb20iLCJleHAiOjE3MDg2MTc5NDF9.5L5TgNNMbJKLkOnhzF1zeXl7oOsiHDGgVooEHShtbx8"
 # TEST_MODEL = "gpt-3.5-turbo"
 TEST_MODEL = "llama2"
 REMOTE_SERVER_BASE_URL = (
@@ -30,7 +31,8 @@ def test_websocket():
 
 
 async def test_main():
-    url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
+    # url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
+    url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -49,7 +51,7 @@ async def test_main():
 async def test_latency():
     res = []
 
-    for i in range(25):
+    for i in range(20):
         s = time.time()
         await test_main()
         e = time.time()
@@ -88,6 +90,6 @@ async def test_code():
 
 
 if __name__ == "__main__":
-    asyncio.run(test_main())
-    # asyncio.run(test_latency())
+    # asyncio.run(test_main())
+    asyncio.run(test_latency())
     # asyncio.run(test_code())

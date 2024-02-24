@@ -141,20 +141,14 @@ def verify_provider_token(provider: str, token: str) -> bool:
             return True
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    cred_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
+def get_current_user(token) -> Tuple[str, bool]:
     payload, err = decode_jwt(token, refresh=False)
     if err:
-        raise cred_exception
+        return None, True
 
     user_email = payload["email"]
     if user_email is None:
-        raise cred_exception
+        return None, True
 
     conn = pg_conn.create_db_conn()
     user = conn.execute(
@@ -163,6 +157,6 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     conn.close()
 
     if user is None:
-        raise cred_exception
+        return None, True
 
-    return user
+    return user, False

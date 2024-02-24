@@ -7,6 +7,7 @@ import httpx
 BASE_URL = "http://127.0.0.1:8000/auth"
 TEST_DATA = {
     "email": "test-email@test.com",
+    "name": "John Doe",
     "password": "testpassword123",
     "username": "testusername",
 }
@@ -44,6 +45,7 @@ def test_duplicate_username():
         BASE_URL + "/signup",
         data={
             "email": "some@email.com",
+            "name": "Jonh Doe",
             "password": "somepassword",
             "username": "testusername",
         },
@@ -183,6 +185,26 @@ def test_successful_logout(redis_conn, db_conn):
     assert res.status_code == 200
     assert res.json() == {"message": "user successfully logged out"}
     assert c is None
+
+
+def test_successful_retrieve_profile():
+    res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
+    res_data = res.json()
+
+    headers = {"Authorization": f"Bearer {res_data['access_token']}"}
+    res = client.get(BASE_URL + "/profile", headers=headers)
+    res_data = res.json()
+
+    assert res.status_code == 200
+    assert res_data["name"] == "John Doe"
+
+
+def test_profile_failure():
+    headers = {"Authorization": f"Bearer random-token-123"}
+    res = client.get(BASE_URL + "/profile", headers=headers)
+
+    assert res.status_code == 401
+    assert "Could not validate credentials" in res.text
 
 
 def test_successful_reset_password():

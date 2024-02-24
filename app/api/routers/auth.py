@@ -11,9 +11,9 @@ import redis
 from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
 
 from app.core import authenticate as auth
+from app.models import auth as model
 from app.queries import queries
 from app.utils import postgres_conn as pg_conn
 
@@ -32,59 +32,28 @@ r = redis.Redis(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-class Token(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    sub: str
-    iat: str
-    exp: str
-
-
-class ResetPassword(BaseModel):
-    email: str
-    new_password: str
-
-
-class RefreshToken(BaseModel):
-    token: str
-
-
-class Message(BaseModel):
-    message: str
-
-
-class OAuthCred(BaseModel):
-    email: str
-    name: str
-    token: str
-    provider: str
-
-
 @router.post(
     "/signup",
     status_code=201,
-    response_model=Message,
+    response_model=model.Message,
     responses={
         500: {
-            "model": Message,
+            "model": model.Message,
             "description": "Internal server error",
         },
         201: {
-            "model": Message,
+            "model": model.Message,
             "description": "Returns signup successful message",
         },
         200: {
-            "model": Message,
+            "model": model.Message,
             "description": "Email already in use",
         },
     },
 )
 def signup_user(
     email: Annotated[str, Form()],
+    name: Annotated[str, Form()],
     password: Annotated[str, Form()],
     username: Annotated[str, Form()],
 ):
@@ -122,7 +91,7 @@ def signup_user(
 
         conn.execute(
             queries.signup_user,
-            (uid, email, pw_hash, datetime.now(timezone.utc), "native", username, None),
+            (uid, email, pw_hash, datetime.now(timezone.utc), "native", username, name),
         )
         conn.commit()
         conn.close()
@@ -141,19 +110,21 @@ def signup_user(
 @router.post(
     "/login",
     status_code=201,
-    response_model=Token,
+    response_model=model.Token,
     responses={
         201: {
-            "model": Token,
+            "model": model.Token,
             "description": "Returns access and refresh token",
         },
         401: {
-            "model": Message,
+            "model": model.Message,
             "description": "Returns HTTP exception for incorrect authentication",
         },
     },
 )
-def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+def login_user(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+) -> model.Token:
     """
     Validates user credential. When user is verified, invalidates user's
     refresh token and returns new access and refresh token
@@ -184,25 +155,27 @@ def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> To
     # add new RT to cache
     r.set(f"rt:whitelist:{user['id']}", new_refresh_token)
 
-    return Token(
+    return model.Token(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
         token_type="bearer",
     )
 
 
+# ? Is there a way to send separate status_code for
+# ? when user is created vs user is just logging in?
 @router.post(
     "/login/oauth",
     status_code=201,
     responses={
         201: {
-            "model": Token,
+            "model": model.Token,
             "description": "user successfully validated and return tokens",
         },
         500: {"description": "Internal server error"},
     },
 )
-def oauth_user(cred: OAuthCred):
+def oauth_user(cred: model.OAuthCred):
     """
     signup user and login if first time user.
     login user if returning user.
@@ -249,7 +222,7 @@ def oauth_user(cred: OAuthCred):
     r.delete(f"rt:whitelist:{uid}")
     r.set(f"rt:whitelist:{uid}", new_refresh_token)
 
-    return Token(
+    return model.Token(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
         token_type="bearer",
@@ -260,8 +233,11 @@ def oauth_user(cred: OAuthCred):
     "/logout",
     status_code=200,
     responses={
-        200: {"model": Message, "description": "User successfully logs out"},
-        401: {"model": Message, "description": "Unauthorized. Refresh token not valid"},
+        200: {"model": model.Message, "description": "User successfully logs out"},
+        401: {
+            "model": model.Message,
+            "description": "Unauthorized. Refresh token not valid",
+        },
     },
 )
 def logout_user(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
@@ -284,11 +260,11 @@ def logout_user(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     status_code=200,
     responses={
         200: {
-            "model": Token,
+            "model": model.Token,
             "description": "Returns a new set of access and refresh token",
         },
         401: {
-            "model": Message,
+            "model": model.Message,
             "description": "Refresh token is not valid",
         },
     },
@@ -330,7 +306,7 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     r.delete(f"rt:whitelist:{d_token['sub']}")
     r.set(f"rt:whitelist:{d_token['sub']}", new_refresh_token)
 
-    return Token(
+    return model.Token(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
         token_type="bearer",
@@ -342,17 +318,17 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     status_code=201,
     responses={
         201: {
-            "model": Message,
+            "model": model.Message,
             "description": "Returns when password is successfully updated",
         },
         401: {
-            "model": Message,
-            "description": "user using provider can't reset password",
+            "model": model.Message,
+            "description": "user using provider, can't reset password",
         },
-        500: {"model": Message, "description": "password verification failed"},
+        500: {"model": model.Message, "description": "password verification failed"},
     },
 )
-def reset_password(cred: ResetPassword):
+def reset_password(cred: model.ResetPassword):
     # see if this user email is associated with native login
     conn = pg_conn.create_db_conn()
     user = conn.execute(
@@ -387,6 +363,17 @@ def reset_password(cred: ResetPassword):
     )
 
 
-# @router.get("/profile")
+@router.get("/profile")
+def get_profile(access_token: Annotated[str, Depends(oauth2_scheme)]):
+    user, err = auth.get_current_user(access_token)
+    if err:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    return model.UserProfile(
+        email=user["email"],
+        name=user["name"],
+        username=user["username"],
+    )
+
 
 # @router.post("/deactivate")
