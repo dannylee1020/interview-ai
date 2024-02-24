@@ -140,9 +140,10 @@ jobs:
             sleep 5
           done
 
-      - name: Run test
+      - name: Run tests
         run: |
-          poetry run pytest --ignore=tests/test_ws.py
+          poetry run pytest tests/test_auth.py
+          poetry run pytest tests/test_user.py
 
       - name: Tear down container
         run: |

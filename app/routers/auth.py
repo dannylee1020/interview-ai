@@ -361,19 +361,3 @@ def reset_password(cred: model.ResetPassword):
         status_code=201,
         content={"message": "password updated successfully"},
     )
-
-
-@router.get("/profile")
-def get_profile(access_token: Annotated[str, Depends(oauth2_scheme)]):
-    user, err = auth.get_current_user(access_token)
-    if err:
-        raise HTTPException(status_code=401, detail="Could not validate credentials")
-
-    return model.UserProfile(
-        email=user["email"],
-        name=user["name"],
-        username=user["username"],
-    )
-
-
-# @router.post("/deactivate")
