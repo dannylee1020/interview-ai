@@ -15,20 +15,14 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.core import authenticate as auth
 from app.models import auth as model
 from app.queries import queries
-from app.utils import postgres_conn as pg_conn
+from app.utils import connections
 
 ACCESS_TOKEN_EXPIRATION_MIN = 30
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/auth")
 
-
-r = redis.Redis(
-    host=os.environ.get("REDIS_HOST"),
-    port=os.environ.get("REDIS_PORT"),
-    password=os.environ.get("REDIS_PW"),
-)
-
+r = connections.create_redis_conn()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
@@ -59,7 +53,7 @@ def signup_user(
 ):
     uid = uuid.uuid4()
 
-    conn = pg_conn.create_db_conn()
+    conn = connections.create_db_conn()
     user_email = conn.execute(
         "select * from users where email = %s", (email,)
     ).fetchone()
@@ -187,7 +181,7 @@ def oauth_user(cred: model.OAuthCred):
 
     uid = uuid.uuid4()
 
-    conn = pg_conn.create_db_conn()
+    conn = connections.create_db_conn()
     user = conn.execute(
         "select * from users where email = %s", (cred.email,)
     ).fetchone()
@@ -330,7 +324,7 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
 )
 def reset_password(cred: model.ResetPassword):
     # see if this user email is associated with native login
-    conn = pg_conn.create_db_conn()
+    conn = connections.create_db_conn()
     user = conn.execute(
         "select * from users where email = %s and provider = %s",
         (cred.email, "native"),

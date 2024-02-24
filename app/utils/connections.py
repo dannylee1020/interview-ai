@@ -1,6 +1,13 @@
+import logging
+import os
 from collections import defaultdict
 
+import psycopg
+import redis
 from fastapi import WebSocket
+from psycopg.rows import dict_row
+
+logging.basicConfig(level=logging.INFO)
 
 
 class ConnectionManager:
@@ -32,3 +39,43 @@ class ConnectionManager:
     async def broadcast(self, message: str):
         for connection in self.active_connections.values():
             await connection.send_text(message)
+
+
+def create_db_conn():
+    dbname = os.environ.get("DB_NAME")
+    password = os.environ.get("DB_PASSWORD")
+    user = os.environ.get("DB_USER")
+    host = os.environ.get("DB_HOST")
+    port = os.environ.get("DB_PORT")
+
+    try:
+        conn = psycopg.connect(
+            dbname=dbname,
+            user=user,
+            host=host,
+            port=port,
+            password=password,
+            row_factory=dict_row,
+        )
+
+        return conn
+
+    except psycopg.Error as e:
+        logging.error(f"Unable to connect to the database: {e}")
+
+        return None
+
+
+def create_redis_conn():
+    try:
+        r = redis.Redis(
+            host=os.environ.get("REDIS_HOST"),
+            port=os.environ.get("REDIS_PORT"),
+            password=os.environ.get("REDIS_PW"),
+        )
+
+        return r
+
+    except Exception as e:
+        logging.error(f"Unable to connect to Redis: {e}")
+        return None

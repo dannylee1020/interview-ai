@@ -13,7 +13,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 
 from app.queries import queries
-from app.utils import postgres_conn as pg_conn
+from app.utils import connections as pg_conn
 
 JWT_SECRET_KEY = str(os.environ.get("JWT_SECRET_KEY"))
 REFRESH_SECRET_KEY = str(os.environ.get("REFRESH_SECRET_KEY"))

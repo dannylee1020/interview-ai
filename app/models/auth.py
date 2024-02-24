@@ -31,9 +31,3 @@ class OAuthCred(BaseModel):
     name: str
     token: str
     provider: str
-
-
-class UserProfile(BaseModel):
-    email: str
-    name: str
-    username: str

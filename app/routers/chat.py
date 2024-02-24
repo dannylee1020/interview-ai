@@ -17,12 +17,12 @@ from openai import AsyncOpenAI
 
 from app.core.authenticate import decode_jwt
 from app.core.process import chat_completion, speech_to_text, text_to_speech
-from app.utils import conn_manager, helper
+from app.utils import connections, helper
 from prompt import prompt
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/chat")
-manager = conn_manager.ConnectionManager()
+manager = connections.ConnectionManager()
 
 
 @router.websocket("/")

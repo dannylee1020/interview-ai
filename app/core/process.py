@@ -10,7 +10,7 @@ import openai
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from openai import AsyncOpenAI
 
-from app.utils import conn_manager, helper
+from app.utils import helper
 
 logging.basicConfig(level=logging.INFO)
 openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])

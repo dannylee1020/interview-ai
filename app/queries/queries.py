@@ -8,3 +8,9 @@ reset_password = """
     SET encrypted_password = %s, updated_at = %s
     WHERE email= %s;
 """
+
+deactivate_user = """
+    UPDATE users
+    SET status = %s, updated_at = %s
+    WHERE email = %s;
+"""
