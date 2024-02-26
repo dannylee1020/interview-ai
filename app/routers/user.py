@@ -27,7 +27,6 @@ def get_profile(access_token: Annotated[str, Depends(oauth2_scheme)]):
     return model.UserProfile(
         email=user["email"],
         name=user["name"],
-        username=user["username"],
     )
 
 

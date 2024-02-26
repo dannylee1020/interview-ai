@@ -1,6 +1,6 @@
 signup_user = """
-    INSERT INTO users (id, email, encrypted_password, created_at, provider, username, name)
-    VALUES (%s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO users (id, email, encrypted_password, created_at, provider, username, name, status)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
 """
 
 reset_password = """
@@ -12,5 +12,12 @@ reset_password = """
 deactivate_user = """
     UPDATE users
     SET status = %s, updated_at = %s
+    WHERE email = %s;
+"""
+
+get_user_by_email = """
+    SELECT
+    FROM users
+        *
     WHERE email = %s;
 """

@@ -40,21 +40,6 @@ def test_duplicate_signup_email():
     assert res.json() == {"message": "Email already in use"}
 
 
-def test_duplicate_username():
-    res = client.post(
-        BASE_URL + "/signup",
-        data={
-            "email": "some@email.com",
-            "name": "Jonh Doe",
-            "password": "somepassword",
-            "username": "testusername",
-        },
-    )
-
-    assert res.status_code == 200
-    assert res.json() == {"message": "Username already in use"}
-
-
 def test_db_insert_signup(db_conn):
     res = db_conn.execute(
         "select * from users where email = 'test-email@test.com'"
@@ -73,25 +58,7 @@ def test_successful_login_with_email(db_conn, redis_conn):
     ).fetchone()
     r_token = redis_conn.get(f"rt:whitelist:{db_data['id']}")
 
-    assert res.status_code == 201
-    assert "access_token" in res.json()
-    assert "refresh_token" in res.json()
-    assert r_token.decode("utf-8") == res_data["refresh_token"]
-
-
-def test_successful_login_with_username(db_conn, redis_conn):
-    res = client.post(
-        BASE_URL + "/login",
-        data={"username": "testusername", "password": "testpassword123"},
-    )
-    res_data = res.json()
-
-    db_data = db_conn.execute(
-        "select * from users where username = 'testusername'"
-    ).fetchone()
-    r_token = redis_conn.get(f"rt:whitelist:{db_data['id']}")
-
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert "access_token" in res.json()
     assert "refresh_token" in res.json()
     assert r_token.decode("utf-8") == res_data["refresh_token"]
@@ -116,7 +83,7 @@ def test_successful_oauth(db_conn, redis_conn):
     ).fetchone()
     r_token = redis_conn.get(f"rt:whitelist:{db_data['id']}")
 
-    assert res.status_code == 201
+    assert res.status_code == 200
     assert "access_token" in res.json()
     assert "refresh_token" in res.json()
     assert r_token.decode("utf-8") == res_data["refresh_token"]

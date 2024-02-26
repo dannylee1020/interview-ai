@@ -49,7 +49,6 @@ def signup_user(
     email: Annotated[str, Form()],
     name: Annotated[str, Form()],
     password: Annotated[str, Form()],
-    username: Annotated[str, Form()],
 ):
     uid = uuid.uuid4()
 
@@ -57,20 +56,12 @@ def signup_user(
     user_email = conn.execute(
         "select * from users where email = %s", (email,)
     ).fetchone()
-    user_username = conn.execute(
-        "select * from users where username = %s", (username,)
-    ).fetchone()
 
+    # check if user email is in use
     if user_email and user_email["provider"] == "native":
         return JSONResponse(
             status_code=200,
             content={"message": "Email already in use"},
-        )
-
-    if user_username:
-        return JSONResponse(
-            status_code=200,
-            content={"message": "Username already in use"},
         )
 
     try:
@@ -85,7 +76,16 @@ def signup_user(
 
         conn.execute(
             queries.signup_user,
-            (uid, email, pw_hash, datetime.now(timezone.utc), "native", username, name),
+            (
+                uid,
+                email,
+                pw_hash,
+                datetime.now(timezone.utc),
+                "native",
+                None,
+                name,
+                "active",
+            ),
         )
         conn.commit()
         conn.close()
@@ -103,10 +103,10 @@ def signup_user(
 
 @router.post(
     "/login",
-    status_code=201,
+    status_code=200,
     response_model=model.Token,
     responses={
-        201: {
+        200: {
             "model": model.Token,
             "description": "Returns access and refresh token",
         },
@@ -160,9 +160,9 @@ def login_user(
 # ? when user is created vs user is just logging in?
 @router.post(
     "/login/oauth",
-    status_code=201,
+    status_code=200,
     responses={
-        201: {
+        200: {
             "model": model.Token,
             "description": "user successfully validated and return tokens",
         },
@@ -198,6 +198,7 @@ def oauth_user(cred: model.OAuthCred):
                 cred.provider,
                 None,
                 cred.name,
+                "active",
             ),
         )
         conn.commit()

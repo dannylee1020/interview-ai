@@ -40,13 +40,8 @@ def verify_password(hash, pw) -> bool:
 
 def authenticate_user(id: str, password: str):
     conn = pg_conn.create_db_conn()
-    user_email = conn.execute("select * from users where email = %s", (id,)).fetchone()
-    user_username = conn.execute(
-        "select * from users where username = %s", (id,)
-    ).fetchone()
+    user = conn.execute("select * from users where email = %s", (id,)).fetchone()
     conn.close()
-
-    user = user_email or user_username
 
     if not user:
         return False
