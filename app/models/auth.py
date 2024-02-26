@@ -22,10 +22,6 @@ class RefreshToken(BaseModel):
     token: str
 
 
-class Message(BaseModel):
-    message: str
-
-
 class OAuthCred(BaseModel):
     email: str
     name: str

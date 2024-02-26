@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core import authenticate as auth
+from app.models import shared as shared_model
 from app.models import user as model
 from app.queries import queries
 from app.utils import connections
@@ -18,7 +19,21 @@ r = connections.create_redis_conn()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-@router.get("/profile")
+@router.get(
+    "/profile",
+    status_code=200,
+    response_model=model.UserProfile,
+    responses={
+        200: {
+            "model": model.UserProfile,
+            "description": "user profile successfully returned",
+        },
+        401: {
+            "model": model.UserProfile,
+            "description": "could not validate user credential",
+        },
+    },
+)
 def get_profile(access_token: Annotated[str, Depends(oauth2_scheme)]):
     user, err = auth.get_current_user(access_token)
     if err:
@@ -30,7 +45,21 @@ def get_profile(access_token: Annotated[str, Depends(oauth2_scheme)]):
     )
 
 
-@router.get("/deactivate")
+@router.get(
+    "/deactivate",
+    status_code=200,
+    response_model=shared_model.Message,
+    responses={
+        200: {
+            "model": shared_model.Message,
+            "description": "account successfully deactivated",
+        },
+        401: {
+            "model": shared_model.Message,
+            "description": "could not validate user credential",
+        },
+    },
+)
 def deactivate_user(access_token: Annotated[str, Depends(oauth2_scheme)]):
     data, err = auth.decode_jwt(access_token, refresh=False)
     if err:

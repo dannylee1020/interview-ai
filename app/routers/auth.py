@@ -14,6 +14,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.core import authenticate as auth
 from app.models import auth as model
+from app.models import shared as shared_model
 from app.queries import queries
 from app.utils import connections
 
@@ -29,18 +30,18 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 @router.post(
     "/signup",
     status_code=201,
-    response_model=model.Message,
+    response_model=shared_model.Message,
     responses={
         500: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Internal server error",
         },
         201: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Returns signup successful message",
         },
         200: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Email already in use",
         },
     },
@@ -111,7 +112,7 @@ def signup_user(
             "description": "Returns access and refresh token",
         },
         401: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Returns HTTP exception for incorrect authentication",
         },
     },
@@ -124,8 +125,8 @@ def login_user(
     refresh token and returns new access and refresh token
 
     """
-    # maybe need to distinguish between
-    # user record not existing and wrong?
+    # ?  maybe need to distinguish between
+    # ?  user record not existing and wrong?
     user = auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -156,11 +157,8 @@ def login_user(
     )
 
 
-# ? Is there a way to send separate status_code for
-# ? when user is created vs user is just logging in?
 @router.post(
     "/login/oauth",
-    status_code=200,
     responses={
         200: {
             "model": model.Token,
@@ -228,9 +226,12 @@ def oauth_user(cred: model.OAuthCred):
     "/logout",
     status_code=200,
     responses={
-        200: {"model": model.Message, "description": "User successfully logs out"},
+        200: {
+            "model": shared_model.Message,
+            "description": "User successfully logs out",
+        },
         401: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Unauthorized. Refresh token not valid",
         },
     },
@@ -259,7 +260,7 @@ def logout_user(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
             "description": "Returns a new set of access and refresh token",
         },
         401: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Refresh token is not valid",
         },
     },
@@ -313,14 +314,17 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     status_code=201,
     responses={
         201: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "Returns when password is successfully updated",
         },
         401: {
-            "model": model.Message,
+            "model": shared_model.Message,
             "description": "user using provider, can't reset password",
         },
-        500: {"model": model.Message, "description": "password verification failed"},
+        500: {
+            "model": shared_model.Message,
+            "description": "password verification failed",
+        },
     },
 )
 def reset_password(cred: model.ResetPassword):
