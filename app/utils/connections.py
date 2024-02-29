@@ -1,6 +1,5 @@
 import logging
 import os
-from collections import defaultdict
 
 import psycopg
 import redis
@@ -10,23 +9,36 @@ from psycopg.rows import dict_row
 logging.basicConfig(level=logging.INFO)
 
 
+# this could move to Redis if we need to scale later
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: dict[str, dict[str, WebSocket]] = defaultdict(dict)
-        self.client_context: dict[list] = {}
+        self.active_connections: dict[str, WebSocket] = {}
+        self.client_context: dict[str, list] = {}
 
-    async def connect(self, session_id: str, client_id: str, websocket: WebSocket):
+    def get(self, session_id: str, websocket: WebSocket) -> (WebSocket, bool):
+        existing_ws = self.active_connections.get(session_id)
+        if existing_ws:
+            return existing_ws, True
+
+        self.active_connections[session_id] = websocket
+        return websocket, False
+
+    async def connect(self, session_id: str, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections[session_id][client_id] = websocket
+        self.active_connections[session_id] = websocket
 
-    async def disconnect(self, session_id: str, client_id: str, websocket: WebSocket):
-        del self.active_connections[session_id][client_id]
+    async def disconnect(self, session_id: str, websocket: WebSocket):
+        del self.active_connections[session_id]
 
     async def send_text(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
     async def send_bytes(self, data: bytes, websocket: WebSocket):
         await websocket.send_bytes(data)
+
+    async def receive(self, websocket: WebSocket):
+        data = await websocket.receive()
+        return data
 
     async def receive_text(self, websocket: WebSocket):
         msg = await websocket.receive_text()

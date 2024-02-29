@@ -15,15 +15,22 @@ from app.utils import helper
 logging.basicConfig(level=logging.INFO)
 openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+model_mapping = {
+    "gpt-3.5": "gpt-3.5-turbo",
+    "gpt-4": "gpt-4-turbo-preview",
+    "llama": "llama",
+}
+
 
 async def chat_completion(messages: list, model: str, stream: bool = False):
     logging.info("Sending request to the chat completion endpoint...")
 
     if "gpt" in model:
         response = await openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=model_mapping[model],
             messages=messages,
             stream=stream,
+            temperature=0.5,
         )
 
         if stream:
@@ -84,9 +91,9 @@ async def text_to_speech(text):
     return res.content
 
 
-# need to update to fit llama if we want to use this function
+# TODO: need to update to fit llama if we want to use this function
 async def summarize_context(context: list):
-    prompt = "Could you summarize this conversations between user and assistant in a concise manner without losing context? \n"
+    prompt = "Could you summarize this conversations between user and assistant without losing context? \n"
     context.append({"role": "user", "content": prompt})
     response = await openai_client.chat.completions.create(
         model="gpt-3.5-turbo", messages=context, stream=False

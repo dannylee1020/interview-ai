@@ -12,10 +12,9 @@ from app.utils import helper
 
 TEST_MAIN_CLIENT = "test-session-id-123:client-main"
 TEST_CODE_CLIENT = "test-session-id-789:client-code"
-# TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzFhYWUxZS0zMGQyLTQzMDgtYjk3Ni0xMTE5YjNiODkxZGUiLCJpYXQiOjE3MDczNzEzOTEsImVtYWlsIjoidGVzdDY2NkB0ZXN0LmNvbSIsImV4cCI6MTcwNzM3MzE5MX0.69j7ECfq3-jY0RWh2IyofgOAyFf3AK3XAUkmk0XXTtQ"
 TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYWE2NTk3NC02MjUxLTQxMTQtYTE2NC0zNDBiY2JhZmE0MWUiLCJpYXQiOjE3MDg2MTYxNDEsImVtYWlsIjoidGVzdDEyM0BnbWFpbC5jb20iLCJleHAiOjE3MDg2MTc5NDF9.5L5TgNNMbJKLkOnhzF1zeXl7oOsiHDGgVooEHShtbx8"
-# TEST_MODEL = "gpt-3.5-turbo"
-TEST_MODEL = "llama2"
+TEST_MODEL = "gpt-3.5"
+# TEST_MODEL = "llama2"
 REMOTE_SERVER_BASE_URL = (
     "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000"
 )
@@ -31,8 +30,8 @@ def test_websocket():
 
 
 async def test_main():
-    # url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
-    url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
+    url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
+    # url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -62,8 +61,8 @@ async def test_latency():
     print(round(sum(res) / len(res), 2))
 
 
-async def run_test(client_id):
-    url = f"{LOCAL_SERVER_BASE_URL}/chat/test/multiple-clients/?id={client_id}&model={TEST_MODEL}"
+async def run_multi_clients_test(client_id):
+    url = f"{LOCAL_SERVER_BASE_URL}/test/clients/?id={client_id}&model={TEST_MODEL}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
@@ -89,7 +88,32 @@ async def test_code():
     await asyncio.gather(*tasks)
 
 
+async def run_single_client_test(client_id):
+    url = f"{LOCAL_SERVER_BASE_URL}/test/clients/?id={client_id}&model={TEST_MODEL}"
+    base_path = "./files"
+    audio_opus = base_path + "/sample_voice.ogg"
+    speech_bytes = open(audio_opus, "rb").read()
+
+    async with websockets.connect(url) as websocket:
+        while True:
+            await websocket.send(speech_bytes)
+            conv = await websocket.recv()
+
+            try:
+                problem = await asyncio.wait_for(websocket.recv(), timeout=1)
+            except:
+                problem = ""
+                pass
+
+            print(conv)
+            print("")
+            print(problem)
+
+            break
+
+
 if __name__ == "__main__":
-    # asyncio.run(test_main())
-    asyncio.run(test_latency())
+    asyncio.run(test_main())
+    # asyncio.run(test_latency())
     # asyncio.run(test_code())
+    # asyncio.run(run_single_client_test(TEST_MAIN_CLIENT))
