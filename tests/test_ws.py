@@ -15,6 +15,7 @@ from app.utils import helper
 TEST_MAIN_CLIENT = "test-session-id-123:client-main"
 TEST_CODE_CLIENT = "test-session-id-789:client-code"
 TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYWE2NTk3NC02MjUxLTQxMTQtYTE2NC0zNDBiY2JhZmE0MWUiLCJpYXQiOjE3MDg2MTYxNDEsImVtYWlsIjoidGVzdDEyM0BnbWFpbC5jb20iLCJleHAiOjE3MDg2MTc5NDF9.5L5TgNNMbJKLkOnhzF1zeXl7oOsiHDGgVooEHShtbx8"
+# TEST_MODEL = "groq"
 TEST_MODEL = "gpt-3.5"
 # TEST_MODEL = "llama2"
 # REMOTE_SERVER_BASE_URL = (

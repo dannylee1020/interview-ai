@@ -1,4 +1,4 @@
-CREATE TABLE public.users (
+CREATE TABLE users (
     id uuid NOT NULL PRIMARY KEY,
     email text,
     encrypted_password text,
@@ -7,12 +7,15 @@ CREATE TABLE public.users (
     deleted_at timestamptz
 );
 
-ALTER TABLE public.users
+ALTER TABLE users
 ADD COLUMN provider text;
 
-ALTER TABLE public.users
+ALTER TABLE users
 ADD COLUMN username text,
 ADD COLUMN name text;
 
-ALTER TABLE public.users
+ALTER TABLE users
 ADD COLUMN status text;
+
+CREATE DATABASE vectors;
+

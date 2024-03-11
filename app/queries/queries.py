@@ -21,3 +21,16 @@ get_user_by_email = """
         *
     WHERE email = %s;
 """
+
+get_similar_vectors = """
+    with a as (
+        SELECT
+            role,
+            content,
+            created_at
+        FROM context
+        ORDER BY content_embedding created_at <-> %s::vector LIMIT %s;
+    )
+
+    SELECT role, content FROM a ORDER BY created_at;
+"""

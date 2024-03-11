@@ -146,6 +146,7 @@ async def ws_chat_audio_test(
     except Exception as e:
         await manager.disconnect(id, ws)
         logging.info(f"Unexpected exception raised: {str(e)}")
+        print(context)
 
 
 client_a = """

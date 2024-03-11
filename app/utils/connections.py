@@ -13,7 +13,6 @@ logging.basicConfig(level=logging.INFO)
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[str, WebSocket] = {}
-        self.client_context: dict[str, list] = {}
 
     def get(self, session_id: str, websocket: WebSocket) -> (WebSocket, bool):
         existing_ws = self.active_connections.get(session_id)
@@ -53,21 +52,22 @@ class ConnectionManager:
             await connection.send_text(message)
 
 
-def create_db_conn():
-    dbname = os.environ.get("DB_NAME")
+def create_db_conn(dbname: str = None, host: str = None, autocommit: bool = False):
+    db = dbname or os.environ.get("DB_NAME")
     password = os.environ.get("DB_PASSWORD")
     user = os.environ.get("DB_USER")
-    host = os.environ.get("DB_HOST")
+    host = host or os.environ.get("DB_HOST")
     port = os.environ.get("DB_PORT")
 
     try:
         conn = psycopg.connect(
-            dbname=dbname,
+            dbname=db,
             user=user,
             host=host,
             port=port,
             password=password,
             row_factory=dict_row,
+            autocommit=autocommit,
         )
 
         return conn

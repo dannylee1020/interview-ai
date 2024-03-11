@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import logging
 import re
@@ -32,7 +33,6 @@ async def ws_chat_audio(
 
     The id is the session_id of a user that is unique per user.
     """
-
     # validate token for authorization
     d_token, err = decode_jwt(token, refresh=False)
     if err:
@@ -46,13 +46,22 @@ async def ws_chat_audio(
     logging.info("Opening websocket channel...")
     await manager.connect(id, ws)
 
-    context = []
-    context.extend(prompt.system_prompt)
+    context = manager.client_context.get(id, [])
+    if context == []:
+        context.extend(prompt.system_prompt)
+
+    problem = ""
+    solution = ""
+
+    problem = ""
+    solution = ""
 
     try:
         while True:
             combined = ""
             text = ""
+            # start counting for tokens
+            count_tokens = asyncio.create_task(process.count_token(context, model))
 
             audio = await manager.receive_bytes(ws)
             logging.info("Received audio from client...")
@@ -61,7 +70,9 @@ async def ws_chat_audio(
             # check if code is being sent, expire after 1 second
             try:
                 async with asyncio.timeout(1.0):
+                    logging.info("Receiving text...")
                     text = await manager.receive_text(ws)
+                    logging.info(f"Text received: {text}")
             except TimeoutError:
                 text = ""
                 logging.info("No text received...")
@@ -71,32 +82,77 @@ async def ws_chat_audio(
             combined += transcript
             combined += f" {text}"
 
-            logging.info(combined)
+            logging.info(f"User response: {combined}")
             context.append({"role": "user", "content": combined})
 
-            response = await process.chat_completion(context, model=model, stream=False)
-            logging.info(f"GPT response: {response}")
+            # count tokens
+            logging.info("Counting tokens...")
+            num_tokens = await count_tokens
+            logging.info(f"Tokens in context: {num_tokens}")
+            if num_tokens > 25000:
+                logging.info("Truncating conversation context...")
+                prev_context = context[len(context) - 20, len(context)]
+                context = []
+                context.extend(prompt.system_prompt)
+                context.extend(prev_context)
+
+            # calling chat async
+            chat_response = asyncio.create_task(
+                process.chat_completion(
+                    context,
+                    model=model,
+                    stream=False,
+                )
+            )
+
+            response = await chat_response
+            logging.info(f"Model response: {response}")
             context.append({"role": "assistant", "content": response})
 
+            logging.info("Saving vectors to DB")
+            asyncio.create_task(process.save_vector(context[1:], d_token["sub"]))
+
             if "Problem" in response:
-                audio_bytes, coding_text = await process.extract_text(
-                    type="problem", res=response
-                )
-                await manager.send_bytes(audio_bytes, ws)
-                await manager.send_text(coding_text, ws)
+                # retry in case of bad formatting from model
+                try:
+                    audio_bytes, coding_text = await process.extract_text(
+                        type="problem", res=response
+                    )
+                except Exception as e:
+                    res = await chat_response
+                    audio_bytes, coding_text = await process.extract_text(
+                        type="problem",
+                        res=res,
+                    )
+                # prevent server from sending same problem multiple times
+                if problem == coding_text:
+                    await manager.send_bytes(audio_bytes, ws)
+                else:
+                    problem = copy.deepcopy(coding_text)
+                    await manager.send_bytes(audio_bytes, ws)
+                    await manager.send_text(coding_text, ws)
             elif "Solution" in response:
-                audio_bytes, coding_text = await process.extract_text(
-                    type="solution", res=response
-                )
-                await manager.send_bytes(audio_bytes, ws)
-                await manager.send_text(coding_text, ws)
+                try:
+                    audio_bytes, coding_text = await process.extract_text(
+                        type="solution", res=response
+                    )
+                except Exception as e:
+                    res = await chat_response
+                    audio_bytes, coding_text = await process.extract_text(
+                        type="solution",
+                        res=res,
+                    )
+                # prevent server from sending same solution multiple times
+                if solution == coding_text:
+                    await manager.send_bytes(audio_bytes, ws)
+                else:
+                    solution = copy.deepcopy(coding_text)
+                    await manager.send_bytes(audio_bytes, ws)
+                    await manager.send_text(coding_text, ws)
             else:
                 audio_bytes = await process.text_to_speech(response)
                 await manager.send_bytes(audio_bytes, ws)
 
-    except openai.AuthenticationError as e:
-        print(f"Error authenticating. Check your {model} API key")
-        await manager.disconnect(id, ws)
     except WebSocketDisconnect as e:
         await manager.disconnect(id, ws)
         context.clear()
