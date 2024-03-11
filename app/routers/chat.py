@@ -1,3 +1,5 @@
+import asyncio
+import json
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -50,17 +52,32 @@ async def ws_chat_audio(
 
     try:
         while True:
-            data = await manager.receive(ws)
-            msg = data.get("msg")
-            code = data.get("code")
+            combined = ""
+            audio = await manager.receive_bytes(ws)
+            text = None
+            # check if code is being sent, expire after 2 seconds
+            try:
+                async with asyncio.timeout(2.0):
+                    text = await manager.receive_text(ws)
+            except TimeoutError:
+                text = None
+                logging.info("timeout")
+                pass
 
-            if msg:
+            if not audio:
+                raise WebSocketException(code=401, reason="no audio data received")
+
+            if audio:
                 logging.info("Received audio from client...")
-                transcript = await speech_to_text(msg)
-                context.append({"role": "user", "content": transcript})
-            if code:
+                transcript = await speech_to_text(audio)
+                combined += transcript
+
+            if text:
                 logging.info("Received code from client...")
-                context.append({"role": "user", "content": code})
+                combined += f" {text}"
+
+            logging.info(combined)
+            context.append({"role": "user", "content": combined})
 
             response = await chat_completion(context, model=model, stream=False)
             context.append({"role": "assistant", "content": response})
@@ -97,11 +114,14 @@ async def ws_chat_audio(
 
     except openai.AuthenticationError as e:
         print("Error authenticating. Check your OpenAI API key")
-        manager.disconnect(id, ws)
+        await manager.disconnect(id, ws)
     except WebSocketDisconnect as e:
         await manager.disconnect(id, ws)
         context.clear()
         logging.info("WebsocketDisconnect raised")
+    except WebSocketException as e:
+        await manager.disconnect(id, ws)
+        logging.error(e)
     except Exception as e:
         await manager.disconnect(id, ws)
         logging.info(f"Unexpected exception raised: {str(e)}")

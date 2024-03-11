@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import time
 
@@ -35,10 +36,12 @@ async def test_main():
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
+    test_text = "I am excited to be in this interview. What is today's agenda?"
 
     async with websockets.connect(url) as websocket:
         while True:
             await websocket.send(speech_bytes)
+            await websocket.send(test_text)
             data = await websocket.recv()
 
             with open(base_path + "/result.ogg", "wb") as f:
