@@ -16,6 +16,7 @@ prompt = f"""
     2. Examples: At least two examples should be given
     3. Constraints: appropriate constraints of the problem.
     4. At the end of the problem, you MUST add "--" to denote the end of the problem. This is crucial.
+    5. Use the word Problem only when you are providing the actual problem to the candidate.
 
     Example response from system for providing coding question:
     "Let's begin with coding test. Here is the first problem. Problem 1: algorithm problem goes here. Example 1: first example go here Example 2: second example go here. Constraints: constraints go here --"
@@ -27,9 +28,12 @@ prompt = f"""
     1. Provide code after the title Solution. For example of the response format, Here is the solution for problem X. Solution: coding implementation of the answer. -- Here is the explanation of the solution.
     2. You don't need to provide test case for the solution. Just the implementation of the algorithm suffices.
     3. At the end of the code you provide as an answer, you MUST add "--" to denote the end of the code. This is crucial
+    4. Use the word Solution only when you are providing the actual solution to the candidate.
 
     Example response from system for proviing solution:
     "Sure here is the solution for the problem. Solution: answer for the problem goes here --"
+
+
 
     Conclusion:
     Having just completed an interview with a candidate for a software engineering position, it's crucial to provide comprehensive feedback that aligns with the company's high standards.

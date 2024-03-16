@@ -91,6 +91,27 @@ async def text_to_speech(text):
     return res.content
 
 
+async def extract_text(type: str, res: str):
+    if type == "problem":
+        conv_ext = re.compile(r"(.*?)Problem", re.DOTALL)
+        matches = conv_ext.match(res)
+        conv = matches.group(1).strip()
+        # process text
+        audio_bytes = await text_to_speech(conv)
+        # extract problem from model response
+        coding_text = re.search(r"Problem[\s\S]+?--", res).group(0)
+    elif type == "solution":
+        conv_ext = re.compile(r"(.*?)Solution", re.DOTALL)
+        matches = conv_ext.match(res)
+        conv = matches.group(1).strip()
+        # process text
+        audio_bytes = await text_to_speech(conv)
+        # extract problem from model response
+        coding_text = re.search(r"Solution[\s\S]+?--", res).group(0)
+
+    return audio_bytes, coding_text
+
+
 # TODO: need to update to fit llama if we want to use this function
 async def summarize_context(context: list):
     prompt = "Could you summarize this conversations between user and assistant without losing context? \n"

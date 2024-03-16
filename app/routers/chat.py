@@ -8,8 +8,8 @@ from typing import Annotated
 import openai
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException
 
+from app.core import process
 from app.core.authenticate import decode_jwt
-from app.core.process import chat_completion, speech_to_text, text_to_speech
 from app.utils import connections, helper
 from prompt import prompt
 
@@ -33,10 +33,10 @@ async def ws_chat_audio(
     The id is the session_id of a user that is unique per user.
     """
 
-    # validate token for authorization
-    d_token, err = decode_jwt(token, refresh=False)
-    if err:
-        raise WebSocketException(code=401, reason="invalid token")
+    # # validate token for authorization
+    # d_token, err = decode_jwt(token, refresh=False)
+    # if err:
+    #     raise WebSocketException(code=401, reason="invalid token")
 
     # check if websocket already exists
     exist_ws = manager.active_connections.get(id)
@@ -53,64 +53,52 @@ async def ws_chat_audio(
     try:
         while True:
             combined = ""
-            audio = await manager.receive_bytes(ws)
-            text = None
-            # check if code is being sent, expire after 2 seconds
-            try:
-                async with asyncio.timeout(2.0):
-                    text = await manager.receive_text(ws)
-            except TimeoutError:
-                text = None
-                logging.info("timeout")
-                pass
+            text = ""
 
+            audio = await manager.receive_bytes(ws)
+            logging.info("Received audio from client...")
             if not audio:
                 raise WebSocketException(code=401, reason="no audio data received")
+            # check if code is being sent, expire after 2 seconds
+            try:
+                async with asyncio.timeout(1.0):
+                    text = await manager.receive_text(ws)
+            except TimeoutError:
+                text = ""
+                logging.info("No text received...")
+                pass
 
-            if audio:
-                logging.info("Received audio from client...")
-                transcript = await speech_to_text(audio)
-                combined += transcript
+            transcript = await process.speech_to_text(audio)
+            combined += transcript
+            combined += f" {text}"
 
-            if text:
-                logging.info("Received code from client...")
-                combined += f" {text}"
+            chat_response = asyncio.create_task(
+                process.chat_completion(context, model=model, stream=False)
+            )
 
             logging.info(combined)
             context.append({"role": "user", "content": combined})
 
-            response = await chat_completion(context, model=model, stream=False)
+            # response = await chat_completion(context, model=model, stream=False)
+            response = await chat_response
+            logging.info(f"GPT response: {response}")
             context.append({"role": "assistant", "content": response})
 
             if "Problem" in response:
-                # extract conversation before problem
-                conv_ext = re.compile(r"(.*?)Problem", re.DOTALL)
-                matches = conv_ext.match(response)
-                conv = matches.group(1).strip()
-                # send conversation first
-                speech_bytes = await text_to_speech(conv)
-                await manager.send_bytes(speech_bytes, ws)
-                # extract problem from model response
-                coding_text = re.search(r"Problem[\s\S]+?--", response).group(0)
-                # send coding problem
+                audio_bytes, coding_text = await process.extract_text(
+                    type="problem", res=response
+                )
+                await manager.send_bytes(audio_bytes, ws)
                 await manager.send_text(coding_text, ws)
-
             elif "Solution" in response:
-                # extract conversation before problem
-                conv_ext = re.compile(r"(.*?)Solution", re.DOTALL)
-                matches = conv_ext.match(response)
-                conv = matches.group(1).strip()
-                # send conversation first
-                speech_bytes = await text_to_speech(conv)
-                await manager.send_bytes(speech_bytes, ws)
-                # extract problem from model response
-                coding_text = re.search(r"Solution[\s\S]+?--", response).group(0)
-                # send working solution
+                audio_bytes, coding_text = await process.extract_text(
+                    type="solution", res=response
+                )
+                await manager.send_bytes(audio_bytes, ws)
                 await manager.send_text(coding_text, ws)
-
             else:
-                speech_bytes = await text_to_speech(response)
-                await manager.send_bytes(speech_bytes, ws)
+                audio_bytes = await process.text_to_speech(response)
+                await manager.send_bytes(audio_bytes, ws)
 
     except openai.AuthenticationError as e:
         print("Error authenticating. Check your OpenAI API key")
