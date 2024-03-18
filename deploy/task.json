@@ -59,9 +59,11 @@
             {
                 "name": "HF_ACCESS_TOKEN",
                 "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/hf-inference-endpoint-XmOuVK:HF_ACCESS_TOKEN::"
-
+            },
+            {
+                "name": "GROQ_API_KEY",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/groq_credentials-10sFUI:GROQ_API_KEY::"
             }
-
         ],
         "portMappings": [
             {

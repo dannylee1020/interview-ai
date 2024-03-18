@@ -59,7 +59,7 @@ async def ws_chat_audio(
             logging.info("Received audio from client...")
             if not audio:
                 raise WebSocketException(code=401, reason="no audio data received")
-            # check if code is being sent, expire after 2 seconds
+            # check if code is being sent, expire after 1 second
             try:
                 async with asyncio.timeout(1.0):
                     text = await manager.receive_text(ws)
@@ -72,15 +72,10 @@ async def ws_chat_audio(
             combined += transcript
             combined += f" {text}"
 
-            chat_response = asyncio.create_task(
-                process.chat_completion(context, model=model, stream=False)
-            )
-
             logging.info(combined)
             context.append({"role": "user", "content": combined})
 
-            # response = await chat_completion(context, model=model, stream=False)
-            response = await chat_response
+            response = await process.chat_completion(context, model=model, stream=False)
             logging.info(f"GPT response: {response}")
             context.append({"role": "assistant", "content": response})
 
@@ -101,7 +96,7 @@ async def ws_chat_audio(
                 await manager.send_bytes(audio_bytes, ws)
 
     except openai.AuthenticationError as e:
-        print("Error authenticating. Check your OpenAI API key")
+        print(f"Error authenticating. Check your {model} API key")
         await manager.disconnect(id, ws)
     except WebSocketDisconnect as e:
         await manager.disconnect(id, ws)

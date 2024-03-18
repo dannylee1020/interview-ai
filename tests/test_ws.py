@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import ssl
 import time
 
 import respx
@@ -16,8 +17,11 @@ TEST_CODE_CLIENT = "test-session-id-789:client-code"
 TEST_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYWE2NTk3NC02MjUxLTQxMTQtYTE2NC0zNDBiY2JhZmE0MWUiLCJpYXQiOjE3MDg2MTYxNDEsImVtYWlsIjoidGVzdDEyM0BnbWFpbC5jb20iLCJleHAiOjE3MDg2MTc5NDF9.5L5TgNNMbJKLkOnhzF1zeXl7oOsiHDGgVooEHShtbx8"
 TEST_MODEL = "gpt-3.5"
 # TEST_MODEL = "llama2"
+# REMOTE_SERVER_BASE_URL = (
+#     "ws://interview-ai-load-balancer-1661127222.us-east-1.elb.amazonaws.com:8000"
+# )
 REMOTE_SERVER_BASE_URL = (
-    "ws://interview-ai-load-balancer-1328148868.us-east-1.elb.amazonaws.com:8000"
+    "wss://interview-ai-load-balancer-1661127222.us-east-1.elb.amazonaws.com:443"
 )
 LOCAL_SERVER_BASE_URL = "ws://localhost:8000"
 
@@ -31,14 +35,16 @@ def test_websocket():
 
 
 async def test_main():
-    url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
-    # url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
+    # url = f"{LOCAL_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
+    url = f"{REMOTE_SERVER_BASE_URL}/chat/?token={TEST_ACCESS_TOKEN}&id={TEST_MAIN_CLIENT}&model={TEST_MODEL}"
     base_path = "./files"
     audio_opus = base_path + "/sample_voice.ogg"
     speech_bytes = open(audio_opus, "rb").read()
     test_text = "I am excited to be in this interview. What is today's agenda?"
 
-    async with websockets.connect(url) as websocket:
+    async with websockets.connect(
+        url, ssl=ssl.SSLContext(ssl.PROTOCOL_TLS)
+    ) as websocket:
         while True:
             await websocket.send(speech_bytes)
             await websocket.send(test_text)

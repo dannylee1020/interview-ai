@@ -456,6 +456,25 @@ reauth = ["pyu2f (>=0.1.5)"]
 requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
 
 [[package]]
+name = "groq"
+version = "0.4.2"
+description = "The official Python library for the groq API"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "groq-0.4.2-py3-none-any.whl", hash = "sha256:5b2b472c64d9f35210e0487db465415d47162da3a114031ecbfc8843d26302a5"},
+    {file = "groq-0.4.2.tar.gz", hash = "sha256:42e8b0abd0f2b2da024b9a747d28960d62951a5364f078e1537c9fceeca8259d"},
+]
+
+[package.dependencies]
+anyio = ">=3.5.0,<5"
+distro = ">=1.7.0,<2"
+httpx = ">=0.23.0,<1"
+pydantic = ">=1.9.0,<3"
+sniffio = "*"
+typing-extensions = ">=4.7,<5"
+
+[[package]]
 name = "h11"
 version = "0.14.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -1404,4 +1423,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.9.7 || >3.9.7,<4.0"
-content-hash = "8195999f40c1a483b64d0d859711fb61eb4e7331ee4b45437ef546d8b1c52993"
+content-hash = "abb65479e2971dae401811f5aade7ea27b3fcda5b154252043288644334aa68b"

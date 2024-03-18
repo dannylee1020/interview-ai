@@ -8,6 +8,7 @@ import re
 import httpx
 import openai
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from groq import AsyncGroq
 from openai import AsyncOpenAI
 
 from app.utils import helper
@@ -18,7 +19,7 @@ openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 model_mapping = {
     "gpt-3.5": "gpt-3.5-turbo",
     "gpt-4": "gpt-4-turbo-preview",
-    "llama": "llama",
+    "groq": "mixtral-8x7b-32768",
 }
 
 
@@ -38,30 +39,19 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
 
         return response.choices[0].message.content
 
-    else:
-        url = "https://h73fzi2bqis5md8e.us-east-1.aws.endpoints.huggingface.cloud"
-        headers = {
-            "Accept": "application/json",
-            "Authorization": f"Bearer {os.environ.get('HF_ACCESS_TOKEN')}",
-            "Content-Type": "application/json",
-        }
+    elif "groq" in model:
+        groq_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
 
-        llama_prompt = helper.format_llama_prompt(messages)
-        payload = {
-            "inputs": llama_prompt,
-            "parameters": {"max_new_tokens": 150},
-        }
+        response = await groq_client.chat.completions.create(
+            model=model_mapping[model],
+            messages=messages,
+            stream=stream,
+            temperature=0.5,
+        )
 
-        async with httpx.AsyncClient() as c:
-            res = await c.post(url, headers=headers, json=payload)
-
-            pattern = r"[^a-zA-Z0-9\s.,!?\-']"
-
-            data = res.json()
-            res_text = data[0]["generated_text"]
-            cleaned_text = re.sub(pattern, "", res_text)
-
-            return cleaned_text
+        if stream:
+            return response
+        return response.choices[0].message.content
 
 
 async def speech_to_text(data):
