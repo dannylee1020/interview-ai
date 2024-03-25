@@ -63,6 +63,18 @@
             {
                 "name": "GROQ_API_KEY",
                 "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/groq_credentials-10sFUI:GROQ_API_KEY::"
+            },
+            {
+                "name": "GITHUB_CLIENT_ID",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/oauth-COkC0o:GITHUB_CLIENT_ID::"
+            },
+            {
+                "name": "GITHUB_CLIENT_SECRET",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/oauth-COkC0o:GITHUB_CLIENT_SECRET::"
+            },
+            {
+                "name": "GOOGLE_CLIENT_ID",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/oauth-COkC0o:GOOGLE_CLIENT_ID::"
             }
         ],
         "portMappings": [

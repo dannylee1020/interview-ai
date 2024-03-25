@@ -83,18 +83,24 @@ async def text_to_speech(text):
 
 async def extract_text(type: str, res: str):
     if type == "problem":
-        conv_ext = re.compile(r"(.*?)Problem", re.DOTALL)
-        matches = conv_ext.match(res)
-        conv = matches.group(1).strip()
+        conv_ext = re.compile(r"(.*?)Problem.*?--(.*?)$", re.DOTALL)
+        matches = conv_ext.search(res)
+        if matches:
+            conv_1 = matches.group(1).strip()
+            conv_2 = matches.group(2).strip() if matches.group(2) else ""
         # process text
+        conv = conv_1 + f" {conv_2}"
         audio_bytes = await text_to_speech(conv)
         # extract problem from model response
         coding_text = re.search(r"Problem[\s\S]+?--", res).group(0)
     elif type == "solution":
-        conv_ext = re.compile(r"(.*?)Solution", re.DOTALL)
-        matches = conv_ext.match(res)
-        conv = matches.group(1).strip()
+        conv_ext = re.compile(r"(.*?)Problem.*?--(.*?)$", re.DOTALL)
+        matches = conv_ext.search(res)
+        conv_1 = matches.group(1).strip()
+        conv_2 = matches.group(2).strip() if matches.group(2) else ""
+
         # process text
+        conv = conv_1 + f" {conv_2}"
         audio_bytes = await text_to_speech(conv)
         # extract problem from model response
         coding_text = re.search(r"Solution[\s\S]+?--", res).group(0)

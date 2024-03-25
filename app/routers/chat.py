@@ -33,10 +33,10 @@ async def ws_chat_audio(
     The id is the session_id of a user that is unique per user.
     """
 
-    # # validate token for authorization
-    # d_token, err = decode_jwt(token, refresh=False)
-    # if err:
-    #     raise WebSocketException(code=401, reason="invalid token")
+    # validate token for authorization
+    d_token, err = decode_jwt(token, refresh=False)
+    if err:
+        raise WebSocketException(code=401, reason="invalid token")
 
     # check if websocket already exists
     exist_ws = manager.active_connections.get(id)
@@ -46,9 +46,8 @@ async def ws_chat_audio(
     logging.info("Opening websocket channel...")
     await manager.connect(id, ws)
 
-    context = manager.client_context.get(id, [])
-    if context == []:
-        context.extend(prompt.system_prompt)
+    context = []
+    context.extend(prompt.system_prompt)
 
     try:
         while True:

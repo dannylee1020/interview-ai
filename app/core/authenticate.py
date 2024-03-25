@@ -104,6 +104,9 @@ def create_refresh_token(data: dict):
 
 
 def verify_provider_token(provider: str, token: str) -> bool:
+    """
+    False means no error. True means error
+    """
     if os.environ.get("TEST_ENV") == "true":
         return False
 
