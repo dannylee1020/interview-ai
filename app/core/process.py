@@ -30,8 +30,6 @@ MODEL_MAPPING = {
     "groq": "mixtral-8x7b-32768",
 }
 
-VOICE_TYPES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
-
 
 async def chat_completion(messages: list, model: str, stream: bool = False):
     logging.info(f"Sending request to {model} chat completion endpoint...")
@@ -78,12 +76,12 @@ async def speech_to_text(data):
     return transcript.text
 
 
-async def text_to_speech(text):
+async def text_to_speech(text: str, voice: str):
     dest = os.path.expanduser("~") + "/Downloads/tts.ogg"
     logging.info("Sending request to the text-to-speech endpoint...")
     res = await openai_client.audio.speech.create(
         model="tts-1",
-        voice=random.choice(VOICE_TYPES),
+        voice=voice,
         response_format="opus",
         input=text,
     )
@@ -91,7 +89,7 @@ async def text_to_speech(text):
     return res.content
 
 
-async def extract_text(type: str, res: str):
+async def extract_text(type: str, res: str, voice: str):
     if "--" not in res:
         res = res + " --"
 
@@ -103,7 +101,7 @@ async def extract_text(type: str, res: str):
         conv_2 = matches.group(2).strip() if matches.group(2) else ""
         # process text
         conv = conv_1 + f" {conv_2}"
-        audio_bytes = await text_to_speech(conv)
+        audio_bytes = await text_to_speech(conv, voice)
         # extract problem from model response
         coding_text = re.search(r"Problem[\s\S]+?--", res).group(0)
     elif type == "solution":
@@ -114,7 +112,7 @@ async def extract_text(type: str, res: str):
 
         # process text
         conv = conv_1 + f" {conv_2}"
-        audio_bytes = await text_to_speech(conv)
+        audio_bytes = await text_to_speech(conv, voice)
         # extract problem from model response
         coding_text = re.search(r"Solution[\s\S]+?--", res).group(0)
 

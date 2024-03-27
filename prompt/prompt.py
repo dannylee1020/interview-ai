@@ -28,7 +28,7 @@ prompt = f"""
     Pick two topics at random and give problems from each topic.
 
     You must follow the format provided here when providing problems:
-    1. Title should be "Problem x" where x denotes number of current problem. Problem name should not be included. For example, Problem 1: description of the problem goes here.
+    1. Problem should always start with "Problem x" where x is the number of the current problem. Problem name should not be included. For example, Problem 1: <description of the problem goes here>.
     2. At least two examples should be given
     3. Provide appropriate constraints of the problem.
     4. Send problem as the last response. Add "--" at the end of the problem.
@@ -124,6 +124,6 @@ test_prompt_2 = f"""
 system_prompt = [
     {
         "role": "system",
-        "content": test_prompt_1,
+        "content": prompt,
     },
 ]

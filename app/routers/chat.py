@@ -2,6 +2,7 @@ import asyncio
 import copy
 import json
 import logging
+import random
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
@@ -17,6 +18,8 @@ from prompt import prompt
 logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/chat")
 manager = connections.ConnectionManager()
+
+VOICE_TYPES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
 
 
 @router.websocket("/")
@@ -51,6 +54,7 @@ async def ws_chat_audio(
 
     problem = ""
     solution = ""
+    voice = random.choice(VOICE_TYPES)
 
     try:
         while True:
@@ -111,13 +115,16 @@ async def ws_chat_audio(
                 # retry in case of bad formatting from model
                 try:
                     audio_bytes, coding_text = await process.extract_text(
-                        type="problem", res=response
+                        type="problem",
+                        res=response,
+                        voice=voice,
                     )
                 except Exception as e:
                     res = await chat_response
                     audio_bytes, coding_text = await process.extract_text(
                         type="problem",
                         res=res,
+                        voice=voice,
                     )
                 # prevent server from sending same problem multiple times
                 if problem == coding_text:
@@ -129,13 +136,16 @@ async def ws_chat_audio(
             elif "Solution" in response:
                 try:
                     audio_bytes, coding_text = await process.extract_text(
-                        type="solution", res=response
+                        type="solution",
+                        res=response,
+                        voice=voice,
                     )
                 except Exception as e:
                     res = await chat_response
                     audio_bytes, coding_text = await process.extract_text(
                         type="solution",
                         res=res,
+                        voice=voice,
                     )
                 # prevent server from sending same solution multiple times
                 if solution == coding_text:
@@ -145,7 +155,7 @@ async def ws_chat_audio(
                     await manager.send_bytes(audio_bytes, ws)
                     await manager.send_text(coding_text, ws)
             else:
-                audio_bytes = await process.text_to_speech(response)
+                audio_bytes = await process.text_to_speech(response, voice)
                 await manager.send_bytes(audio_bytes, ws)
 
     except WebSocketDisconnect as e:
