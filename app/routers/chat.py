@@ -46,12 +46,8 @@ async def ws_chat_audio(
     logging.info("Opening websocket channel...")
     await manager.connect(id, ws)
 
-    context = manager.client_context.get(id, [])
-    if context == []:
-        context.extend(prompt.system_prompt)
-
-    problem = ""
-    solution = ""
+    context = []
+    context.extend(prompt.system_prompt)
 
     problem = ""
     solution = ""
@@ -72,7 +68,6 @@ async def ws_chat_audio(
                 async with asyncio.timeout(1.0):
                     logging.info("Receiving text...")
                     text = await manager.receive_text(ws)
-                    logging.info(f"Text received: {text}")
             except TimeoutError:
                 text = ""
                 logging.info("No text received...")

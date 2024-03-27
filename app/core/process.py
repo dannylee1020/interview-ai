@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import os
+import random
 import re
 import uuid
 from datetime import datetime, timezone
@@ -23,11 +24,13 @@ from prompt import prompt
 logging.basicConfig(level=logging.INFO)
 openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-model_mapping = {
+MODEL_MAPPING = {
     "gpt-3.5": "gpt-3.5-turbo",
     "gpt-4": "gpt-4-turbo-preview",
     "groq": "mixtral-8x7b-32768",
 }
+
+VOICE_TYPES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
 
 
 async def chat_completion(messages: list, model: str, stream: bool = False):
@@ -35,7 +38,7 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
 
     if "gpt" in model:
         response = await openai_client.chat.completions.create(
-            model=model_mapping[model],
+            model=MODEL_MAPPING[model],
             messages=messages,
             stream=stream,
             temperature=0.5,
@@ -50,7 +53,7 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
         groq_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
 
         response = await groq_client.chat.completions.create(
-            model=model_mapping[model],
+            model=MODEL_MAPPING[model],
             messages=messages,
             stream=stream,
             temperature=0.5,
@@ -80,7 +83,7 @@ async def text_to_speech(text):
     logging.info("Sending request to the text-to-speech endpoint...")
     res = await openai_client.audio.speech.create(
         model="tts-1",
-        voice="alloy",
+        voice=random.choice(VOICE_TYPES),
         response_format="opus",
         input=text,
     )

@@ -28,12 +28,11 @@ prompt = f"""
     Pick two topics at random and give problems from each topic.
 
     You must follow the format provided here when providing problems:
-    1. Title: title should be "Problem x" where x denotes number of current problem. Problem name should not be included. For example, Problem 1: description of the problem goes here.
-    2. Examples: At least two examples should be given
-    3. Constraints: appropriate constraints of the problem.
+    1. Title should be "Problem x" where x denotes number of current problem. Problem name should not be included. For example, Problem 1: description of the problem goes here.
+    2. At least two examples should be given
+    3. Provide appropriate constraints of the problem.
     4. Send problem as the last response. Add "--" at the end of the problem.
     5. Use the word Problem only when you are providing the actual problem to the candidate.
-    6. Don't send the same problem more than once unless interviewee asks to
 
     Example response from system for providing coding question:
     "Let's begin with coding test. Here is the first problem. Problem 1: <real algorithm problem goes here>. Example 1: <first example goes here> Example 2: <second example go here>. Constraints: <constraints go here> -- <other comments go here>"
