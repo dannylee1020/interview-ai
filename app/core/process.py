@@ -143,7 +143,7 @@ async def count_token(messages: list, model: str):
 
 async def save_vector(context: list, user_id: str):
     conv = copy.deepcopy(context)
-    conn = connections.create_db_conn(dbname="vectors", autocommit=True)
+    conn = connections.create_db_conn(dbname="vectors")
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
     conn.execute(
         f"CREATE TABLE IF NOT EXISTS context (id uuid PRIMARY KEY, user_id text, created_at timestamptz, role text, content text);"
@@ -162,6 +162,7 @@ async def save_vector(context: list, user_id: str):
                 c["content"],
             ),
         )
+    conn.commit()
     conn.close()
 
 

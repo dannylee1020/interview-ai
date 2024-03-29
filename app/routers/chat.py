@@ -46,15 +46,15 @@ async def ws_chat_audio(
     if exist_ws:
         raise WebSocketException(code=403, reason="websocket connection already open")
 
-    logging.info("Opening websocket channel...")
-    await manager.connect(id, ws)
-
     context = []
     context.extend(prompt.system_prompt)
 
     problem = ""
     solution = ""
     voice = random.choice(VOICE_TYPES)
+
+    logging.info("Opening websocket channel...")
+    await manager.connect(id, ws)
 
     try:
         while True:
@@ -85,7 +85,6 @@ async def ws_chat_audio(
             context.append({"role": "user", "content": combined})
 
             # count tokens
-            logging.info("Counting tokens...")
             num_tokens = await count_tokens
             logging.info(f"Tokens in context: {num_tokens}")
             if num_tokens > 25000:
@@ -108,9 +107,6 @@ async def ws_chat_audio(
             logging.info(f"Model response: {response}")
             context.append({"role": "assistant", "content": response})
 
-            logging.info("Saving vectors to DB")
-            asyncio.create_task(process.save_vector(context[1:], d_token["sub"]))
-
             if "Problem" in response:
                 # retry in case of bad formatting from model
                 try:
@@ -120,6 +116,7 @@ async def ws_chat_audio(
                         voice=voice,
                     )
                 except Exception as e:
+                    logging.info("Error extracting problem. Retrying...")
                     res = await chat_response
                     audio_bytes, coding_text = await process.extract_text(
                         type="problem",
@@ -141,6 +138,7 @@ async def ws_chat_audio(
                         voice=voice,
                     )
                 except Exception as e:
+                    logging.info("Error extracting solution. Retrying...")
                     res = await chat_response
                     audio_bytes, coding_text = await process.extract_text(
                         type="solution",
@@ -159,12 +157,11 @@ async def ws_chat_audio(
                 await manager.send_bytes(audio_bytes, ws)
 
     except WebSocketDisconnect as e:
+        # ? save vector when it gets disconnected?
+        logging.info("Saving vectors to DB before disconnecting")
+        await process.save_vector(context[1:], d_token["sub"])
         await manager.disconnect(id, ws)
-        context.clear()
         logging.info("WebsocketDisconnect raised")
-    except WebSocketException as e:
-        await manager.disconnect(id, ws)
-        logging.error(e)
     except Exception as e:
         await manager.disconnect(id, ws)
         logging.info(f"Unexpected exception raised: {str(e)}")
