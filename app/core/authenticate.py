@@ -58,6 +58,9 @@ def encode_jwt(data: dict, refresh: bool):
 
 
 def decode_jwt(token: str, refresh: bool) -> Tuple[str, bool]:
+    """
+    if token is expired, pyjwt will throw exception
+    """
     try:
         if refresh:
             return (

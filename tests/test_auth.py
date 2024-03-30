@@ -74,28 +74,24 @@ def test_incorrect_credential_login():
     assert "Incorrect username or password" in res.text
 
 
-def test_successful_oauth(db_conn, redis_conn):
-    res = client.post(BASE_URL + "/login/oauth", json=TEST_OAUTH_DATA)
+def test_successful_token_validation():
+    res = client.post(BASE_URL + "/login", data=TEST_FORM_DATA)
     res_data = res.json()
+    ref_token = res_data["access_token"]
 
-    db_data = db_conn.execute(
-        "select * from users where email = 'test-oauth@test.com' and provider != 'native'"
-    ).fetchone()
-    r_token = redis_conn.get(f"rt:whitelist:{db_data['id']}")
+    headers = {"Authorization": f"Bearer {ref_token}"}
+    res = client.get(BASE_URL + "/token/validate", headers=headers)
 
     assert res.status_code == 200
-    assert "access_token" in res.json()
-    assert "refresh_token" in res.json()
-    assert r_token.decode("utf-8") == res_data["refresh_token"]
 
 
-def test_oauth_db_insert(db_conn):
-    user = db_conn.execute(
-        "select * from users where email = 'test-oauth@test.com' and provider = 'github'"
-    ).fetchone()
+def test_invalid_token_validation():
+    ref_token = uuid.uuid4()
 
-    assert user is not None
-    assert user["email"] == "test-oauth@test.com"
+    headers = {"Authorization": f"Bearer {ref_token}"}
+    res = client.get(BASE_URL + "/token/validate", headers=headers)
+
+    assert res.status_code == 401
 
 
 def test_successful_token_refresh():

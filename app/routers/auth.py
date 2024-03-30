@@ -309,6 +309,35 @@ def refresh_token(refresh_token: Annotated[str, Depends(oauth2_scheme)]):
     )
 
 
+@router.get(
+    "/token/validate",
+    status_code=200,
+    responses={
+        200: {
+            "model": shared_model.Message,
+            "description": "access token successfully validated",
+        },
+        401: {
+            "model": shared_model.Message,
+            "description": "access token not validated",
+        },
+    },
+)
+def validate_token(access_token: Annotated[str, Depends(oauth2_scheme)]):
+    d_token, err = auth.decode_jwt(access_token, refresh=False)
+    if err:
+        raise HTTPException(
+            status_code=401,
+            detail=f"token not valid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "access token is valid"},
+    )
+
+
 @router.put(
     "/reset-password",
     status_code=201,
