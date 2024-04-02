@@ -119,6 +119,28 @@ async def extract_text(type: str, res: str, voice: str):
     return audio_bytes, coding_text
 
 
+async def query_questions(company: str = None, difficulty: str = "medium"):
+    where = f"WHERE difficulty = '{difficulty}'"
+    conn = connections.create_db_conn()
+    questions = conn.execute(
+        f"SELECT problem from questions {where} order by random() limit 2;"
+    ).fetchall()
+
+    problems = ""
+    for i, q in enumerate(questions):
+        problems += f"Problem {i+1}: {q['problem']} -- \n\n"
+
+    context = [
+        {
+            "role": "system",
+            "content": f"Provide these questiosn to the interviewee: {problems}",
+        }
+    ]
+
+    conn.close()
+    return context
+
+
 async def count_token(messages: list, model: str):
     if model == "groq":
         total_tokens = 0
@@ -143,7 +165,7 @@ async def count_token(messages: list, model: str):
 
 async def save_vector(context: list, user_id: str):
     conv = copy.deepcopy(context)
-    conn = connections.create_db_conn(dbname="vectors")
+    conn = connections.create_db_conn()
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
     conn.execute(
         f"CREATE TABLE IF NOT EXISTS context (id uuid PRIMARY KEY, user_id text, created_at timestamptz, role text, content text);"
@@ -179,7 +201,7 @@ async def get_embedding(input: str):
 async def search_vector(input: str, limit: int):
     vector = await get_embedding(input)
 
-    conn = connections.create_db_conn(dbname="vectors", autocommit=True)
+    conn = connections.create_db_conn()
     sim_v = conn.execute(
         queries.get_similar_vectors,
         (

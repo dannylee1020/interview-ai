@@ -1,7 +1,6 @@
 import logging
 import os
 import uuid
-from calendar import timegm
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 

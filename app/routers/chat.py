@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import openai
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core import process
 from app.core.authenticate import decode_jwt
@@ -28,6 +28,7 @@ async def ws_chat_audio(
     token: str,
     id: str | None = None,
     model: str | None = None,
+    company: str | None = None,
 ):
     """
     This endpoint sends and receives audio bytes
@@ -48,6 +49,11 @@ async def ws_chat_audio(
 
     context = []
     context.extend(prompt.system_prompt)
+
+    # query problems from DB and feed into the model
+    questions = await process.query_questions(difficulty="easy")
+    logging.info(f"Questions {questions}")
+    context.extend(questions)
 
     problem = ""
     solution = ""
@@ -92,6 +98,7 @@ async def ws_chat_audio(
                 prev_context = context[len(context) - 20, len(context)]
                 context = []
                 context.extend(prompt.system_prompt)
+                context.extend(questions)
                 context.extend(prev_context)
 
             # calling chat async
@@ -157,7 +164,6 @@ async def ws_chat_audio(
                 await manager.send_bytes(audio_bytes, ws)
 
     except WebSocketDisconnect as e:
-        # ? save vector when it gets disconnected?
         logging.info("Saving vectors to DB before disconnecting")
         await process.save_vector(context[1:], d_token["sub"])
         await manager.disconnect(id, ws)

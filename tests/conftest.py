@@ -10,7 +10,7 @@ from psycopg.rows import dict_row
 
 @pytest.fixture(scope="session")
 def db_conn():
-    dbname = "postgres"
+    dbname = "mockview"
     password = "postgres"
     user = "postgres"
     host = "127.0.0.1"
