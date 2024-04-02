@@ -1,4 +1,4 @@
-CREATE TABLE public.users (
+CREATE TABLE users (
     id uuid NOT NULL PRIMARY KEY,
     email text,
     encrypted_password text,

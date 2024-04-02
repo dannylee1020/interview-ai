@@ -17,5 +17,12 @@ ADD COLUMN name text;
 ALTER TABLE users
 ADD COLUMN status text;
 
-CREATE DATABASE vectors;
+CREATE TABLE IF NOT EXISTS questions (
+    id uuid PRIMARY KEY,
+    topic text,
+    title text,
+    difficulty text,
+    tags text [],
+    problem text
+);
 
