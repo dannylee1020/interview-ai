@@ -52,7 +52,6 @@ async def ws_chat_audio(
 
     # query problems from DB and feed into the model
     questions = await process.query_questions(difficulty="easy")
-    logging.info(f"Questions {questions}")
     context.extend(questions)
 
     problem = ""
