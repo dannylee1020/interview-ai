@@ -89,7 +89,6 @@ async def ws_chat_audio(
             logging.info(f"User response: {combined}")
             context.append({"role": "user", "content": combined})
 
-            # count tokens
             num_tokens = await count_tokens
             logging.info(f"Tokens in context: {num_tokens}")
             if num_tokens > 25000:
