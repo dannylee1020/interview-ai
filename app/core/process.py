@@ -27,7 +27,7 @@ openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 MODEL_MAPPING = {
     "gpt-3.5": "gpt-3.5-turbo",
     "gpt-4": "gpt-4-turbo-preview",
-    "groq": "mixtral-8x7b-32768",
+    "groq": "llama2-70b-4096",
 }
 
 
@@ -77,7 +77,6 @@ async def speech_to_text(data):
 
 
 async def text_to_speech(text: str, voice: str):
-    dest = os.path.expanduser("~") + "/Downloads/tts.ogg"
     logging.info("Sending request to the text-to-speech endpoint...")
     res = await openai_client.audio.speech.create(
         model="tts-1",
@@ -89,7 +88,7 @@ async def text_to_speech(text: str, voice: str):
     return res.content
 
 
-async def extract_text(type: str, res: str, voice: str):
+async def extract_tts(type: str, res: str, voice: str):
     if "--" not in res:
         res = res + " --"
 
@@ -114,8 +113,7 @@ async def extract_text(type: str, res: str, voice: str):
         conv = conv_1 + f" {conv_2}"
         audio_bytes = await text_to_speech(conv, voice)
         # extract problem from model response
-        coding_text = re.search(r"Solution[\s\S]+?--", res).group(0)
-
+        coding_text = re.search(r"Problem[\s\S]+?--", res).group(0)
     return audio_bytes, coding_text
 
 
@@ -123,22 +121,11 @@ async def query_questions(company: str = None, difficulty: str = "medium"):
     where = f"WHERE difficulty = '{difficulty}'"
     conn = connections.create_db_conn()
     questions = conn.execute(
-        f"SELECT problem from questions {where} order by random() limit 2;"
+        f"SELECT problem from questions {where} order by random() limit 2;",
     ).fetchall()
 
-    problems = ""
-    for i, q in enumerate(questions):
-        problems += f"Problem {i+1}: {q['problem']} -- \n\n"
-
-    context = [
-        {
-            "role": "system",
-            "content": f"Provide these questiosn to the interviewee: {problems}",
-        }
-    ]
-
     conn.close()
-    return context
+    return [q["problem"] for q in questions]
 
 
 async def count_token(messages: list, model: str):
