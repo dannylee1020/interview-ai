@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import httpx
 import openai
 import tiktoken
+from anthropic import AsyncAnthropicBedrock
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from groq import AsyncGroq
 from openai import AsyncOpenAI
@@ -22,13 +23,16 @@ from app.utils import connections, helper
 from prompt import prompt
 
 logging.basicConfig(level=logging.INFO)
-openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 MODEL_MAPPING = {
     "gpt-3.5": "gpt-3.5-turbo",
     "gpt-4": "gpt-4-turbo-preview",
     "groq": "llama2-70b-4096",
+    "claude-haiku": "anthropic.claude-3-haiku-20240307-v1:0",
+    "claude-sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
 }
+
+openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 async def chat_completion(messages: list, model: str, stream: bool = False):
@@ -60,6 +64,24 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
         if stream:
             return response
         return response.choices[0].message.content
+
+    elif "claude" in model:
+        claude_client = AsyncAnthropicBedrock(
+            aws_access_key=os.environ.get("AWS_BEDROCK_ACCESS_KEY"),
+            aws_secret_key=os.environ.get("AWS_BEDROCK_SECRET_KEY"),
+        )
+        response = await claude_client.messages.create(
+            model=MODEL_MAPPING[model],
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.5,
+            stream=stream,
+            system=prompt.prompt,
+        )
+
+        if stream:
+            return response
+        return response.content[0].text
 
 
 async def speech_to_text(data):
@@ -113,7 +135,7 @@ async def extract_tts(type: str, res: str, voice: str):
         conv = conv_1 + f" {conv_2}"
         audio_bytes = await text_to_speech(conv, voice)
         # extract problem from model response
-        coding_text = re.search(r"Problem[\s\S]+?--", res).group(0)
+        coding_text = re.search(r"Solution[\s\S]+?--", res).group(0)
     return audio_bytes, coding_text
 
 
@@ -129,7 +151,7 @@ async def query_questions(company: str = None, difficulty: str = "medium"):
 
 
 async def count_token(messages: list, model: str):
-    if model == "groq":
+    if "gpt" not in model:
         total_tokens = 0
         enc = tiktoken.get_encoding("cl100k_base")
         for m in messages:

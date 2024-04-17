@@ -29,6 +29,7 @@ groq = "^0.4.2"
 tiktoken = "^0.6.0"
 numpy = "^1.26.4"
 pgvector = "^0.2.5"
+anthropic = {extras = ["bedrock"], version = "^0.25.2"}
 
 [tool.poetry.group.dev.dependencies]
 boto3 = "^1.34.74"

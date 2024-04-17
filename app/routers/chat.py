@@ -37,6 +37,7 @@ async def ws_chat_audio(
 
     The id is the session_id of a user that is unique per user.
     """
+    # model = "claude-sonnet"
     # validate token for authorization
     d_token, err = decode_jwt(token, refresh=False)
     if err:
@@ -48,7 +49,8 @@ async def ws_chat_audio(
         raise WebSocketException(code=403, reason="websocket connection already open")
 
     context = []
-    context.extend(prompt.system_prompt)
+    if "claude" not in model:
+        context.extend(prompt.system_prompt)
 
     # query problems from DB and feed into the model
     questions = await process.query_questions(difficulty="easy")
@@ -94,7 +96,8 @@ async def ws_chat_audio(
                 logging.info("Truncating conversation context...")
                 prev_context = context[len(context) - 20, len(context)]
                 context = []
-                context.extend(prompt.system_prompt)
+                if "claude" not in model:
+                    context.extend(prompt.system_prompt)
                 context.extend(questions)
                 context.extend(prev_context)
 
@@ -119,6 +122,8 @@ async def ws_chat_audio(
                 For solution, model is responsible for generation
             """
             if "Problem" in response:
+                # dummy text to keep user assistant order correctly
+                context.append({"role": "user", "content": "--"})
                 # handle when there is no more questions in the list
                 try:
                     question = questions.pop()

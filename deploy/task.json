@@ -75,6 +75,14 @@
             {
                 "name": "GOOGLE_CLIENT_ID",
                 "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/oauth-COkC0o:GOOGLE_CLIENT_ID::"
+            },
+            {
+                "name": "AWS_BEDROCK_ACCESS_KEY",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/bedrock-yzlTTx:AWS_BEDROCK_ACCESS_KEY::"
+            },
+            {
+                "name": "AWS_BEDROCK_SECRET_KEY",
+                "valueFrom": "arn:aws:secretsmanager:us-east-1:077860636820:secret:prod/bedrock-yzlTTx:AWS_BEDROCK_SECRET_KEY::"
             }
         ],
         "portMappings": [
