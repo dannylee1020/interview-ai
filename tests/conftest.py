@@ -1,16 +1,14 @@
 import os
 
-import httpx
 import psycopg
 import pytest
 import redis
-import respx
 from psycopg.rows import dict_row
 
 
 @pytest.fixture(scope="session")
 def db_conn():
-    dbname = "mockview"
+    dbname = "master"
     password = "postgres"
     user = "postgres"
     host = "127.0.0.1"
