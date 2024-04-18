@@ -180,11 +180,12 @@ def oauth_user(cred: model.OAuthCred):
 
     conn = connections.create_db_conn()
     user = conn.execute(
-        "select * from users where email = %s", (cred.email,)
+        "select * from users where email = %s and provider = %s",
+        (cred.email, cred.provider),
     ).fetchone()
 
     # if first time user, create a record in the DB first
-    if not user or user["provider"] == "native":
+    if not user:
         conn.execute(
             queries.signup_user,
             (
