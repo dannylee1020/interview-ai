@@ -37,7 +37,6 @@ async def ws_chat_audio(
 
     The id is the session_id of a user that is unique per user.
     """
-    # model = "claude-sonnet"
     # validate token for authorization
     d_token, err = decode_jwt(token, refresh=False)
     if err:
@@ -66,8 +65,8 @@ async def ws_chat_audio(
         while True:
             combined = ""
             text = ""
-            # start counting for tokens
-            count_tokens = asyncio.create_task(process.count_token(context, model))
+            ## start counting for tokens
+            # count_tokens = asyncio.create_task(process.count_token(context, model))
 
             audio = await manager.receive_bytes(ws)
             logging.info("Received audio from client...")
