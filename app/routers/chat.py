@@ -90,16 +90,16 @@ async def ws_chat_audio(
             logging.info(f"User response: {combined}")
             context.append({"role": "user", "content": combined})
 
-            num_tokens = await count_tokens
-            logging.info(f"Tokens in context: {num_tokens}")
-            if num_tokens > 25000:
-                logging.info("Truncating conversation context...")
-                prev_context = context[len(context) - 20, len(context)]
-                context = []
-                if "claude" not in model:
-                    context.extend(prompt.system_prompt)
-                context.extend(questions)
-                context.extend(prev_context)
+            # num_tokens = await count_tokens
+            # logging.info(f"Tokens in context: {num_tokens}")
+            # if num_tokens > 25000:
+            #     logging.info("Truncating conversation context...")
+            #     prev_context = context[len(context) - 20, len(context)]
+            #     context = []
+            #     if "claude" not in model:
+            #         context.extend(prompt.system_prompt)
+            #     context.extend(questions)
+            #     context.extend(prev_context)
 
             # calling chat async
             chat_response = asyncio.create_task(
