@@ -29,6 +29,8 @@ async def ws_chat_audio(
     id: str | None = None,
     model: str | None = None,
     company: str | None = None,
+    topic: str | None = None,
+    difficulty: str | None = None,
 ):
     """
     This endpoint sends and receives audio bytes

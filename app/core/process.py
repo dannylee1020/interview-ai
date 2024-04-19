@@ -139,11 +139,11 @@ async def extract_tts(type: str, res: str, voice: str):
     return audio_bytes, coding_text
 
 
-async def query_questions(company: str = None, difficulty: str = "medium"):
-    where = f"WHERE difficulty = '{difficulty}'"
+async def query_questions(company: str = None, difficulty: str = "medium". topic: str = None):
+    where = f"WHERE difficulty = '{difficulty}' and topic = '{topic}'" if topic else f"WHERE difficulty = '{difficulty}'"
     conn = connections.create_db_conn()
     questions = conn.execute(
-        f"SELECT problem from questions {where} order by random() limit 2;",
+        f"SELECT problem FROM questions {where} ORDER BY random() limit 2;",
     ).fetchall()
 
     conn.close()
