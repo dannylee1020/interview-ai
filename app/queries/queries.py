@@ -34,3 +34,14 @@ get_similar_vectors = """
 
     SELECT role, content FROM a ORDER BY created_at;
 """
+
+upsert_preference = """
+    INSERT INTO preference (id, user_id, created_at, updated_at, theme, language, model)
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT (user_id)
+    DO UPDATE SET
+        updated_at = EXCLUDED.updated_at,
+        theme = EXCLUDED.theme,
+        language = EXCLUDED.language,
+        model = EXCLUDED.model
+"""

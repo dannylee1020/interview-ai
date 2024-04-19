@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -29,7 +30,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
             "description": "user profile successfully returned",
         },
         401: {
-            "model": model.UserProfile,
+            "model": shared_model.Message,
             "description": "could not validate user credential",
         },
     },
@@ -42,6 +43,73 @@ def get_profile(access_token: Annotated[str, Depends(oauth2_scheme)]):
     return model.UserProfile(
         email=user["email"],
         name=user["name"],
+    )
+
+
+@router.get(
+    "/preference/get",
+    status_code=200,
+    response_model=model.UserPreference,
+    responses={
+        200: {
+            "model": model.UserPreference,
+            "description": "user preference successfully returned",
+        },
+        401: {
+            "model": shared_model.Message,
+            "description": "could not validate user credential",
+        },
+    },
+)
+def get_preference(access_token: Annotated[str, Depends(oauth2_scheme)]):
+    d_token, err = auth.decode_jwt(access_token, refresh=False)
+    if err:
+        raise HTTPException(status_code=401, detail="Invalid access token")
+
+    user_id = d_token["sub"]
+    conn = connections.create_db_conn()
+    pref = conn.execute(
+        "SELECT theme, language, model FROM preference WHERE user_id = %s",
+        (user_id,),
+    ).fetchone()
+    conn.close()
+
+    return model.UserPreference(
+        theme=pref["theme"],
+        language=pref["language"],
+        model=pref["model"],
+    )
+
+
+@router.post("/preference/save")
+def save_preference(
+    access_token: Annotated[str, Depends(oauth2_scheme)],
+    pref: model.UserPreference,
+):
+    d_token, err = auth.decode_jwt(access_token, refresh=False)
+    if err:
+        raise HTTPException(status_code=401, detail="Invalid access token")
+
+    user_id = d_token["sub"]
+    conn = connections.create_db_conn()
+    conn.execute(
+        queries.upsert_preference,
+        (
+            uuid.uuid4(),
+            user_id,
+            datetime.now(timezone.utc),
+            datetime.now(timezone.utc),
+            pref.theme,
+            pref.language,
+            pref.model,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "User preference successfully saved"},
     )
 
 

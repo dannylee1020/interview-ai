@@ -33,3 +33,36 @@ CREATE TABLE IF NOT EXISTS context (
     role text,
     content text
 );
+
+CREATE TABLE IF NOT EXISTS preference (
+    id uuid PRIMARY KEY,
+    user_id uuid,
+    created_at timestamptz,
+    updated_at timestamptz,
+    theme text,
+    language text,
+    model text
+);
+
+ALTER TABLE preference
+ADD CONSTRAINT unique_user_id UNIQUE (user_id);
+
+ALTER TABLE context
+ADD COLUMN user_id_temp uuid;
+
+ALTER TABLE context
+DROP COLUMN user_id;
+
+ALTER TABLE context
+RENAME COLUMN user_id_temp TO user_id;
+
+ALTER TABLE context
+ADD CONSTRAINT fk_user
+FOREIGN KEY (user_id)
+REFERENCES users(id);
+
+
+ALTER TABLE preference
+ADD CONSTRAINT fk_user
+FOREIGN KEY (user_id)
+REFERENCES users(id);
