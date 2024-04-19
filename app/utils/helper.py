@@ -1,5 +1,6 @@
 import json
 import subprocess
+import uuid
 
 import ffmpeg
 
@@ -29,3 +30,7 @@ def format_llama_prompt(messages: list):
             formatted_messages = formatted_messages + f"\n\n{content} </s>"
 
     return formatted_messages
+
+
+def convert_to_uuid(id: str):
+    return uuid.UUID(id)

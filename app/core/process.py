@@ -184,10 +184,6 @@ async def save_vector(context: list, user_id: str):
     conv = copy.deepcopy(context)
     conn = connections.create_db_conn()
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-    conn.execute(
-        f"CREATE TABLE IF NOT EXISTS context (id uuid PRIMARY KEY, user_id text, created_at timestamptz, role text, content text);"
-    )
-
     register_vector(conn)
 
     for c in conv:
@@ -195,7 +191,7 @@ async def save_vector(context: list, user_id: str):
             "INSERT INTO context (id, user_id, created_at, role, content) VALUES (%s, %s, %s, %s, %s)",
             (
                 uuid.uuid4(),
-                user_id,
+                hepler.convert_to_uuid(user_id),
                 datetime.now(timezone.utc),
                 c["role"],
                 c["content"],
