@@ -209,7 +209,7 @@ def oauth_user(cred: model.OAuthCred):
         }
     else:
         payload = {
-            "sub": user["id"],
+            "sub": str(user["id"]),
             "iat": datetime.now(timezone.utc),
             "email": cred.email,
         }
