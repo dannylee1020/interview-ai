@@ -47,7 +47,8 @@ async def ws_chat_audio(
     # check if websocket already exists
     exist_ws = manager.active_connections.get(id)
     if exist_ws:
-        raise WebSocketException(code=403, reason="websocket connection already open")
+        # use existing websocket conection
+        ws = exist_ws
 
     context = []
     if "claude" not in model:

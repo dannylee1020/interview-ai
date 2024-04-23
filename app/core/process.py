@@ -191,7 +191,7 @@ async def save_vector(context: list, user_id: str):
             "INSERT INTO context (id, user_id, created_at, role, content) VALUES (%s, %s, %s, %s, %s)",
             (
                 uuid.uuid4(),
-                hepler.convert_to_uuid(user_id),
+                helper.convert_to_uuid(user_id),
                 datetime.now(timezone.utc),
                 c["role"],
                 c["content"],
