@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import openai
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException
 
 from app.core import process
 from app.core.authenticate import decode_jwt
