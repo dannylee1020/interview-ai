@@ -202,11 +202,17 @@ def oauth_user(cred: model.OAuthCred):
         conn.commit()
         conn.close()
 
-    payload = {
-        "sub": str(uid),
-        "iat": datetime.now(timezone.utc),
-        "email": cred.email,
-    }
+        payload = {
+            "sub": str(uid),
+            "iat": datetime.now(timezone.utc),
+            "email": cred.email,
+        }
+    else:
+        payload = {
+            "sub": user["id"],
+            "iat": datetime.now(timezone.utc),
+            "email": cred.email,
+        }
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
     new_access_token = auth.create_access_token(payload, access_token_expires)
