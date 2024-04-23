@@ -182,7 +182,7 @@ def oauth_user(cred: model.OAuthCred):
         (cred.email, cred.provider),
     ).fetchone()
 
-    user_id = user.get("id") or uuid.uuid4()
+    user_id = user.get("id") if user else uuid.uuid4()
 
     # if first time user, create a record in the DB first
     if not user:
