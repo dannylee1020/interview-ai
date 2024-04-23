@@ -20,14 +20,15 @@ from pgvector.psycopg import register_vector
 
 from app import queries
 from app.utils import connections, helper
-from prompt import prompt
+
+# from prompt import prompt
 
 logging.basicConfig(level=logging.INFO)
 
 MODEL_MAPPING = {
     "gpt-3.5": "gpt-3.5-turbo",
     "gpt-4": "gpt-4-turbo-preview",
-    "groq": "llama2-70b-4096",
+    "groq": "llama3-70b-8192",
     "claude-haiku": "anthropic.claude-3-haiku-20240307-v1:0",
     "claude-sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
 }
@@ -43,7 +44,7 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
             model=MODEL_MAPPING[model],
             messages=messages,
             stream=stream,
-            temperature=0.5,
+            temperature=0.2,
         )
 
         if stream:
@@ -58,7 +59,8 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
             model=MODEL_MAPPING[model],
             messages=messages,
             stream=stream,
-            temperature=0.5,
+            temperature=0.1,
+            top_p=0.1,
         )
 
         if stream:
@@ -74,9 +76,8 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
             model=MODEL_MAPPING[model],
             messages=messages,
             max_tokens=1024,
-            temperature=0.5,
+            temperature=0.3,
             stream=stream,
-            system=prompt.prompt,
         )
 
         if stream:
@@ -111,35 +112,30 @@ async def text_to_speech(text: str, voice: str):
 
 
 async def extract_tts(type: str, res: str, voice: str):
-    if "--" not in res:
-        res = res + " --"
-
     if type == "problem":
-        conv_ext = re.compile(r"(.*?)Problem.*?--(.*?)$", re.DOTALL)
+        conv_ext = re.compile(r"(.*?)<problem>(.*?)</problem>(.*)", re.DOTALL)
         matches = conv_ext.search(res)
 
-        conv_1 = matches.group(1).strip()
-        conv_2 = matches.group(2).strip() if matches.group(2) else ""
+        text_before = matches.group(1).strip() if matches.group(1) else ""
+        text_after = matches.group(3).strip() if matches.group(3) else ""
+        code = matches.group(2).strip()
         # process text
-        conv = conv_1 + f" {conv_2}"
+        conv = text_before + f" {text_after}"
         audio_bytes = await text_to_speech(conv, voice)
-        # extract problem from model response
-        coding_text = re.search(r"Problem[\s\S]+?--", res).group(0)
     elif type == "solution":
-        conv_ext = re.compile(r"(.*?)Solution.*?--(.*?)$", re.DOTALL)
+        conv_ext = re.compile(r"(.*?)<answer>(.*?)</answer>(.*)$", re.DOTALL)
         matches = conv_ext.search(res)
-        conv_1 = matches.group(1).strip()
-        conv_2 = matches.group(2).strip() if matches.group(2) else ""
+        text_before = matches.group(1).strip() if matches.group(1) else ""
+        text_after = matches.group(3).strip() if matches.group(3) else ""
+        code = matches.group(2).strip()
 
         # process text
-        conv = conv_1 + f" {conv_2}"
+        conv = text_before + f" {text_after}"
         audio_bytes = await text_to_speech(conv, voice)
-        # extract problem from model response
-        coding_text = re.search(r"Solution[\s\S]+?--", res).group(0)
-    return audio_bytes, coding_text
+    return audio_bytes, code
 
 
-async def query_questions(
+async def query_qna(
     company: str = None,
     difficulty: str = None,
     topic: str = None,
@@ -148,18 +144,40 @@ async def query_questions(
     topic = topic.lower() if topic else None
 
     where = (
-        f"WHERE difficulty = '{difficulty}' and topic = '{topic}'"
+        f"WHERE difficulty = '{difficulty}' and '{topic}' = ANY(tags)"
         if topic
         else f"WHERE difficulty = '{difficulty}'"
     )
-
     conn = connections.create_db_conn()
-    questions = conn.execute(
-        f"SELECT problem, topic FROM questions {where} ORDER BY random() limit 2;",
-    ).fetchall()
-    conn.close()
 
-    return [q["problem"] for q in questions]
+    #! need to query by language
+    db_results = conn.execute(
+        f"""
+            SELECT
+                q.*,
+                s.hints,
+                sc.code
+            FROM questions q
+            JOIN solution s
+                ON q.qid = s.qid
+            JOIN solution_code sc
+                ON q.qid = sc.qid
+            {where}
+            AND sc.language = 'python'
+            ORDER BY random()
+            LIMIT 2
+        """
+    ).fetchall()
+
+    res = []
+    for r in db_results:
+        data = {}
+        data["question"] = r["problem"]
+        data["hints"] = r["hints"]
+        data["solution"] = r["code"]
+        res.append(data)
+
+    return res
 
 
 async def count_token(messages: list, model: str):

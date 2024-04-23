@@ -48,16 +48,17 @@ async def ws_chat_audio(
     if exist_ws:
         raise WebSocketException(code=403, reason="websocket connection already open")
 
-    context = []
-    if "claude" not in model:
-        context.extend(prompt.system_prompt)
-
-    # query problems from DB and feed into the model
-    questions = await process.query_questions(difficulty=difficulty, topic=topic)
-
-    problem = ""
-    solution = ""
     voice = random.choice(VOICE_TYPES)
+    model = "gpt-4"
+
+    # query problems and solutions to feed into the model
+    qna_data = await process.query_qna(difficulty=difficulty, topic=topic)
+    # construct list for model injection
+    questions = [q["question"] for q in qna_data]
+    solutions = [q["solution"] for q in qna_data]
+
+    context = []
+    context.extend(prompt.system_prompt)
 
     logging.info("Opening websocket channel...")
     await manager.connect(id, ws)
@@ -66,9 +67,6 @@ async def ws_chat_audio(
         while True:
             combined = ""
             text = ""
-            ## start counting for tokens
-            # count_tokens = asyncio.create_task(process.count_token(context, model))
-
             audio = await manager.receive_bytes(ws)
             logging.info("Received audio from client...")
             if not audio:
@@ -90,17 +88,6 @@ async def ws_chat_audio(
             logging.info(f"User response: {combined}")
             context.append({"role": "user", "content": combined})
 
-            # num_tokens = await count_tokens
-            # logging.info(f"Tokens in context: {num_tokens}")
-            # if num_tokens > 25000:
-            #     logging.info("Truncating conversation context...")
-            #     prev_context = context[len(context) - 20, len(context)]
-            #     context = []
-            #     if "claude" not in model:
-            #         context.extend(prompt.system_prompt)
-            #     context.extend(questions)
-            #     context.extend(prev_context)
-
             # calling chat async
             chat_response = asyncio.create_task(
                 process.chat_completion(
@@ -109,84 +96,70 @@ async def ws_chat_audio(
                     stream=False,
                 )
             )
-
             response = await chat_response
             logging.info(f"Model response: {response}")
             context.append({"role": "assistant", "content": response})
-
             """
                 problems and solutions get extracted from the response and sent as text
                 rest of the tokens are extracted and converted to audio bytes and sent
 
-                For problem, problems are injected to the model response at each step
-                For solution, model is responsible for generation
+                Both problems and solutions are queried from DB and get injected at runtime.
             """
             if "Problem" in response:
-                # dummy text to keep user assistant order correctly
-                context.append({"role": "user", "content": "--"})
-                # handle when there is no more questions in the list
-                try:
-                    question = questions.pop()
-                    context.append({"role": "assistant", "content": question})
-                except Exception:
-                    # send this response and continue the conversation
-                    res = "That's it for today's interview. Did you have any questions on any of the problems or interview in general?"
-                    audio_bytes = await process.text_to_speech(res, voice)
-                    context.append({"role": "assistant", "content": res})
-
-                    await manager.send_bytes(audio_bytes, ws)
-                    continue
-
-                # extract response and convert into audio
+                logging.info("extracting problem...")
                 try:
                     audio_bytes, _ = await process.extract_tts(
                         type="problem",
                         res=response,
                         voice=voice,
                     )
-                # retry in case of bad formatting from model
+                    question = questions.pop(0)
+                    # dummy text to keep user assistant order correctly
+                    context.append({"role": "user", "content": "--"})
+                    context.append({"role": "assistant", "content": question})
+                except IndexError as e:
+                    if "Problem 1" in response:
+                        question = qna_data[0]["question"]
+                    else:
+                        question = qna_data[1]["question"]
                 except Exception as e:
-                    logging.info("Error extracting problem. Retrying...")
-                    res = await chat_response
-                    audio_bytes, _ = await process.extract_tts(
-                        type="problem",
-                        res=res,
-                        voice=voice,
-                    )
-                # prevent server from sending same problem multiple times
-                if problem == question:
-                    await manager.send_bytes(audio_bytes, ws)
-                else:
-                    problem = copy.deepcopy(question)
-                    await manager.send_bytes(audio_bytes, ws)
-                    await manager.send_text(question, ws)
+                    logging.info("Error extracting problem...")
+                    continue
+                await manager.send_bytes(audio_bytes, ws)
+                await manager.send_text(question, ws)
             elif "Solution" in response:
+                logging.info("extracting solution...")
                 try:
-                    audio_bytes, coding_text = await process.extract_tts(
+                    audio_bytes, _ = await process.extract_tts(
                         type="solution",
                         res=response,
                         voice=voice,
                     )
-                # retry in case of bad formatting from model
+                    solution = solutions.pop(0)
+                    context.append({"role": "user", "content": "--"})
+                    context.append({"role": "user", "content": solution})
+
+                    await manager.send_bytes(audio_bytes, ws)
+                except IndexError as e:
+                    if "Solution 1" in response:
+                        solution = qna_data[0]["solution"]
+                    else:
+                        solution = qna_data[1]["solution"]
                 except Exception as e:
                     logging.info("Error extracting solution. Retrying...")
-                    res = await chat_response
-                    audio_bytes, coding_text = await process.extract_tts(
-                        type="solution",
-                        res=res,
-                        voice=voice,
-                    )
-                # prevent server from sending same solution multiple times
-                if solution == coding_text:
+                    pattern = re.compile(r"(.*?)```(.*?)```(.*?)", re.DOTALL)
+                    matches = pattern.search(response)
+                    solution = matches.group(2).strip()
+
+                    text_prev = matches.group(1).strip() if matches.group(1) else ""
+                    text_post = matches.group(3).strip() if matches.group(3) else ""
+                    combined_text = text_prev + f" {text_post}"
+                    audio_bytes = await process.text_to_speech(combined_text, voice)
                     await manager.send_bytes(audio_bytes, ws)
-                else:
-                    solution = copy.deepcopy(coding_text)
-                    await manager.send_bytes(audio_bytes, ws)
-                    await manager.send_text(coding_text, ws)
+                await manager.send_text(solution, ws)
             else:
                 audio_bytes = await process.text_to_speech(response, voice)
                 await manager.send_bytes(audio_bytes, ws)
-
     except WebSocketDisconnect as e:
         logging.info("Saving vectors to DB before disconnecting")
         await process.save_vector(context[1:], d_token["sub"])

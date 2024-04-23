@@ -6,12 +6,12 @@ import redis
 from psycopg.rows import dict_row
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def db_conn():
     dbname = "master"
+    host = "127.0.0.1"
     password = "postgres"
     user = "postgres"
-    host = "127.0.0.1"
     port = "5432"
 
     conn = psycopg.connect(
@@ -26,7 +26,7 @@ def db_conn():
     return conn
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def redis_conn():
     host = "127.0.0.1"
     port = "6379"

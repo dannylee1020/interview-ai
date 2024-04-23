@@ -44,9 +44,11 @@ CREATE TABLE IF NOT EXISTS preference (
     model text
 );
 
+-- for upsert
 ALTER TABLE preference
 ADD CONSTRAINT unique_user_id UNIQUE (user_id);
 
+-- for converting user_id to uuid
 ALTER TABLE context
 ADD COLUMN user_id_temp uuid;
 
@@ -56,6 +58,7 @@ DROP COLUMN user_id;
 ALTER TABLE context
 RENAME COLUMN user_id_temp TO user_id;
 
+-- add fk relationship
 ALTER TABLE context
 ADD CONSTRAINT fk_user
 FOREIGN KEY (user_id)
@@ -66,3 +69,28 @@ ALTER TABLE preference
 ADD CONSTRAINT fk_user
 FOREIGN KEY (user_id)
 REFERENCES users(id);
+
+ALTER TABLE questions
+ADD COLUMN qid INT,
+ADD COLUMN company text,
+DROP COLUMN topic;
+
+ALTER TABLE questions
+ADD CONSTRAINT unique_qid UNIQUE (qid);
+
+CREATE TABLE IF NOT EXISTS solution (
+    id uuid PRIMARY KEY,
+    title text,
+    qid int UNIQUE,
+    hints text,
+    FOREIGN KEY (qid) REFERENCES questions(qid)
+);
+
+CREATE TABLE IF NOT EXISTS solution_code (
+    id uuid PRIMARY KEY,
+    language text,
+    code text,
+    qid int,
+    FOREIGN KEY (qid)  REFERENCES questions(qid),
+    CONSTRAINT unique_solution_key UNIQUE (qid, language)
+);

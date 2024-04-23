@@ -3,6 +3,7 @@ import subprocess
 import uuid
 
 import ffmpeg
+from jinja2 import Template
 
 from prompt import prompt
 
@@ -34,3 +35,10 @@ def format_llama_prompt(messages: list):
 
 def convert_to_uuid(id: str):
     return uuid.UUID(id)
+
+
+def render_template(template, data):
+    template = Template(template)
+    rendered_string = template.render(data=data)
+
+    return rendered_string

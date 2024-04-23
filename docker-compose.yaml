@@ -1,5 +1,6 @@
 services:
   api:
+    container_name: serverapi
     build: .
     ports:
       - "8000:8000"
@@ -32,6 +33,11 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - 5432:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
     volumes:
       - ./dev_resources/init.sql:/docker-entrypoint-initdb.d/init.sql
   redis:

@@ -141,6 +141,9 @@ jobs:
             sleep 5
           done
 
+      - name: check running container
+        run: docker ps
+
       - name: Run tests
         run: |
           poetry run pytest tests/test_auth.py
