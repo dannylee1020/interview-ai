@@ -176,20 +176,20 @@ def oauth_user(cred: model.OAuthCred):
     if err:
         raise HTTPException(status_code=401, detail="Provider token not valid")
 
-    uid = uuid.uuid4()
-
     conn = connections.create_db_conn()
     user = conn.execute(
         "select * from users where email = %s and provider = %s",
         (cred.email, cred.provider),
     ).fetchone()
 
+    user_id = user.get("id") or uuid.uuid4()
+
     # if first time user, create a record in the DB first
     if not user:
         conn.execute(
             queries.signup_user,
             (
-                uid,
+                user_id,
                 cred.email,
                 None,
                 datetime.now(timezone.utc),
@@ -202,24 +202,18 @@ def oauth_user(cred: model.OAuthCred):
         conn.commit()
         conn.close()
 
-        payload = {
-            "sub": str(uid),
-            "iat": datetime.now(timezone.utc),
-            "email": cred.email,
-        }
-    else:
-        payload = {
-            "sub": str(user["id"]),
-            "iat": datetime.now(timezone.utc),
-            "email": cred.email,
-        }
+    payload = {
+        "sub": str(user_id),
+        "iat": datetime.now(timezone.utc),
+        "email": cred.email,
+    }
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
     new_access_token = auth.create_access_token(payload, access_token_expires)
     new_refresh_token = auth.create_refresh_token(payload)
 
-    r.delete(f"rt:whitelist:{uid}")
-    r.set(f"rt:whitelist:{uid}", new_refresh_token)
+    r.delete(f"rt:whitelist:{user_id}")
+    r.set(f"rt:whitelist:{user_id}", new_refresh_token)
 
     return model.Token(
         access_token=new_access_token,

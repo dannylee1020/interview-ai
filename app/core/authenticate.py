@@ -161,3 +161,12 @@ def get_current_user(token) -> Tuple[str, bool]:
         return None, True
 
     return user, False
+
+
+if __name__ == "__main__":
+    token, err = decode_jwt(
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZjI4NjZjOS1kZTNmLTRmMzUtOTRjMC04ZTNjMjJhOTBiYzMiLCJpYXQiOjE3MTM4NDI4NDAsImVtYWlsIjoiZGFubnlsZWUxMDIwQGdtYWlsLmNvbSIsImV4cCI6MTcxMzg0NDY0MH0.WhglXeu04u9lKa-WgkEAQ4o_TUOm5bXu9i3f1YTTui4",
+        refresh=False,
+    )
+
+    print(token)

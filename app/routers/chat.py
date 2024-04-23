@@ -44,12 +44,6 @@ async def ws_chat_audio(
     if err:
         raise WebSocketException(code=401, reason="invalid token")
 
-    # check if websocket already exists
-    exist_ws = manager.active_connections.get(id)
-    if exist_ws:
-        # use existing websocket conection
-        ws = exist_ws
-
     context = []
     if "claude" not in model:
         context.extend(prompt.system_prompt)
