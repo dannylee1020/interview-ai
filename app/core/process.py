@@ -141,20 +141,24 @@ async def extract_tts(type: str, res: str, voice: str):
 
 async def query_questions(
     company: str = None,
-    difficulty: str = "medium",
+    difficulty: str = None,
     topic: str = None,
 ):
+    difficulty = difficulty.lower() if difficulty else "medium"
+    topic = topic.lower() if topic else None
+
     where = (
         f"WHERE difficulty = '{difficulty}' and topic = '{topic}'"
         if topic
         else f"WHERE difficulty = '{difficulty}'"
     )
+
     conn = connections.create_db_conn()
     questions = conn.execute(
-        f"SELECT problem FROM questions {where} ORDER BY random() limit 2;",
+        f"SELECT problem, topic FROM questions {where} ORDER BY random() limit 2;",
     ).fetchall()
-
     conn.close()
+
     return [q["problem"] for q in questions]
 
 

@@ -53,7 +53,7 @@ async def ws_chat_audio(
         context.extend(prompt.system_prompt)
 
     # query problems from DB and feed into the model
-    questions = await process.query_questions(difficulty="easy")
+    questions = await process.query_questions(difficulty=difficulty, topic=topic)
 
     problem = ""
     solution = ""
