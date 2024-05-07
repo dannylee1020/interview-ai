@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS solution (
+CREATE TABLE solution (
     id uuid PRIMARY KEY,
     title text,
     qid int UNIQUE,
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS solution (
     FOREIGN KEY (qid) REFERENCES questions(qid)
 );
 
-CREATE TABLE IF NOT EXISTS solution_code (
+CREATE TABLE solution_code (
     id uuid PRIMARY KEY,
     language text,
     code text,
