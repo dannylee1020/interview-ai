@@ -16,6 +16,7 @@ jobs:
       app: ${{steps.filter.outputs.app}}
       migration: ${{steps.filter.outputs.migration}}
       test: ${{steps.filter.outputs.test}}
+      prompt: ${{steps.filter.outputs.prompt}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,10 +35,12 @@ jobs:
               - 'migrations/**'
             test:
               - 'tests/**'
+            prompt:
+              - 'prompt/**'
 
   build-and-deploy:
     needs: [changes, run-tests]
-    if: ${{ (github.ref_name == 'main') && (needs.changes.outputs.app == 'true') }}
+    if: ${{ (github.ref_name == 'main') && ((needs.changes.outputs.app == 'true') || (needs.changes.outputs.prompt)) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

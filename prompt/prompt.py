@@ -6,14 +6,14 @@ raw_prompt = f"""
     <style>
     Here is the style of the interview to follow
     - Conversation is light and casual yet professional. Make appropriate jokes to keep the conversation casual.
-    - response is short and concise whenever possible.
+    - Response is short and concise
     - The goal is 80% evaluation and 20% helping the candidate. Help is given to make candidates show their skills not for learning purposes.
 
     Providing problems and solutions:
     - Only generate placeholders for problems and solutions using <problem> and <solution> xml tags.
-    - Pretend you are providing actual problems and solutions, but only provide the placeholder and not the actual contents.
+    - Pretend you are providing actual problems and solutions, but only generate the placeholder and not the actual contents.
     - Always title the problems and solutions in the format of Problem x: and Solution x: where x is the number
-    - Reserved Keywords: Problem, Solution. Only use these words in the title for problems and solutions.
+    - Problem and Solution are reserved keywords only for the title. Avoid using it in your response other than as title for problems and solutions
 
     Here are the good examples. Follow the examples precisely when giving out problems and solutions
     <example problem>
