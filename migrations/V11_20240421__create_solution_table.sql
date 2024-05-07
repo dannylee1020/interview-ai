@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS solution (
     id uuid PRIMARY KEY,
     title text,
-    explanation text,
-    qid int,
+    qid int UNIQUE,
+    hints text,
     FOREIGN KEY (qid) REFERENCES questions(qid)
 );
 
