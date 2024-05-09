@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 router = APIRouter(prefix="/chat")
 manager = connections.ConnectionManager()
 
-VOICE_TYPES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
+VOICE_TYPES = ["alloy", "echo", "fable", "nova", "shimmer"]
 
 
 @router.websocket("/")
@@ -114,8 +114,6 @@ async def ws_chat_audio(
                         voice=voice,
                     )
                     question = questions.pop(0)
-                    # dummy text to keep user assistant order correctly
-                    context.append({"role": "user", "content": "--"})
                     context.append({"role": "assistant", "content": question})
                 except IndexError as e:
                     if "Problem 1" in response:
@@ -136,8 +134,7 @@ async def ws_chat_audio(
                         voice=voice,
                     )
                     solution = solutions.pop(0)
-                    context.append({"role": "user", "content": "--"})
-                    context.append({"role": "user", "content": solution})
+                    context.append({"role": "assistant", "content": solution})
 
                     await manager.send_bytes(audio_bytes, ws)
                 except IndexError as e:
@@ -147,7 +144,7 @@ async def ws_chat_audio(
                         solution = qna_data[1]["solution"]
                 except Exception as e:
                     logging.info("Error extracting solution. Retrying...")
-                    pattern = re.compile(r"(.*?)```(.*?)```(.*?)", re.DOTALL)
+                    pattern = re.compile(r"(.*?)```(.*?)```(.*)", re.DOTALL)
                     matches = pattern.search(response)
                     solution = matches.group(2).strip()
 

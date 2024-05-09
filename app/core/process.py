@@ -44,7 +44,7 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
             model=MODEL_MAPPING[model],
             messages=messages,
             stream=stream,
-            temperature=0.2,
+            temperature=0.3,
         )
 
         if stream:
@@ -59,8 +59,7 @@ async def chat_completion(messages: list, model: str, stream: bool = False):
             model=MODEL_MAPPING[model],
             messages=messages,
             stream=stream,
-            temperature=0.1,
-            top_p=0.1,
+            temperature=0.2,
         )
 
         if stream:
@@ -123,7 +122,7 @@ async def extract_tts(type: str, res: str, voice: str):
         conv = text_before + f" {text_after}"
         audio_bytes = await text_to_speech(conv, voice)
     elif type == "solution":
-        conv_ext = re.compile(r"(.*?)<answer>(.*?)</answer>(.*)$", re.DOTALL)
+        conv_ext = re.compile(r"(.*?)<solution>(.*?)</solution>(.*)$", re.DOTALL)
         matches = conv_ext.search(res)
         text_before = matches.group(1).strip() if matches.group(1) else ""
         text_after = matches.group(3).strip() if matches.group(3) else ""
