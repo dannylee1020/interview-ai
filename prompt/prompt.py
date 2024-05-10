@@ -130,11 +130,19 @@ raw_prompt = f"""
     </solutions>
 
     <feedback>
-    Once a user is finished with both problems, provide constructive feedback on these areas:
+    Once a user is finished with both problems, provide constructive feedback. Feedback should be based on how well user solved both problems.
+    Generate feedbacks in these areas:
     Technical:
     - Strengths and weaknesss in user's technical ability to solve problems. Suggestions on how to improve.
+    - Some things to consider here are:
+        - did user successfully solve both problems?
+        - was user able to answer follow up questions?
+        - is user's solution optimized?
     Communication:
-    - Strengths and weaknesses in user's ability to communicate her thought process and reasoning. Suggestions on how to improve
+    - Strengths and weaknesses in user's ability to communicate her thought process and reasoning. Suggestions on how to improve.
+    - Some things to consider here are:
+        - was user able to clearly articulate his logic for his solution?
+        - did user explain what he was doing during the problem solving session?
 
     The feedback should be in the form of conversation rather than categorized by topics and bullet points.
     </feedback>
