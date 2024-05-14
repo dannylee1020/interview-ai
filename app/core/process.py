@@ -21,13 +21,11 @@ from pgvector.psycopg import register_vector
 from app import queries
 from app.utils import connections, helper
 
-# from prompt import prompt
-
 logging.basicConfig(level=logging.INFO)
 
 MODEL_MAPPING = {
     "gpt-3.5": "gpt-3.5-turbo",
-    "gpt-4": "gpt-4-turbo-preview",
+    "gpt-4o": "gpt-4o",
     "groq": "llama3-70b-8192",
     "claude-haiku": "anthropic.claude-3-haiku-20240307-v1:0",
     "claude-sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
@@ -138,18 +136,17 @@ async def query_qna(
     company: str = None,
     difficulty: str = None,
     topic: str = None,
+    language: str = None,
 ):
     difficulty = difficulty.lower() if difficulty else "medium"
     topic = topic.lower() if topic else None
 
     where = (
-        f"WHERE difficulty = '{difficulty}' and '{topic}' = ANY(tags)"
+        f"WHERE difficulty = '{difficulty}' and language = '{language}' and '{topic}' = ANY(tags)"
         if topic
-        else f"WHERE difficulty = '{difficulty}'"
+        else f"WHERE difficulty = '{difficulty}' and language = '{language}'"
     )
     conn = connections.create_db_conn()
-
-    #! need to query by language
     db_results = conn.execute(
         f"""
             SELECT
@@ -162,7 +159,6 @@ async def query_qna(
             JOIN solution_code sc
                 ON q.qid = sc.qid
             {where}
-            AND sc.language = 'python'
             ORDER BY random()
             LIMIT 2
         """

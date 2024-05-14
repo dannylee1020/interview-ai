@@ -8,10 +8,19 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import openai
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    WebSocketException,
+)
+from fastapi.security import OAuth2PasswordBearer
 
 from app.core import process
 from app.core.authenticate import decode_jwt
+from app.models import chat as model
 from app.utils import connections, helper
 from prompt import prompt
 
@@ -26,7 +35,6 @@ VOICE_TYPES = ["alloy", "echo", "fable", "nova", "shimmer"]
 async def ws_chat_audio(
     ws: WebSocket,
     token: str,
-    id: str | None = None,
     model: str | None = None,
     company: str | None = None,
     topic: str | None = None,
@@ -44,15 +52,28 @@ async def ws_chat_audio(
     if err:
         raise WebSocketException(code=401, reason="invalid token")
 
+    id = d_token["sub"]
     exist_ws = manager.active_connections.get(id)
     if exist_ws:
         raise WebSocketException(code=403, reason="websocket connection already open")
 
     voice = random.choice(VOICE_TYPES)
-    model = "gpt-4"
+    model = "gpt-4o"
+
+    # fetch language preference
+    conn = connections.create_db_conn()
+    lang = conn.execute(
+        "SELECT language FROM preference WHERE user_id = %s",
+        (id,),
+    ).fetchone()
+    conn.close()
 
     # query problems and solutions to feed into the model
-    qna_data = await process.query_qna(difficulty=difficulty, topic=topic)
+    qna_data = await process.query_qna(
+        difficulty=difficulty,
+        topic=topic,
+        language=lang["language"] if lang else "python",
+    )
     # construct list for model injection
     questions = [q["question"] for q in qna_data]
     solutions = [q["solution"] for q in qna_data]
@@ -116,6 +137,7 @@ async def ws_chat_audio(
                     question = questions.pop(0)
                     context.append({"role": "assistant", "content": question})
                 except IndexError as e:
+                    logging.info("Index error.. falling back to direct injection")
                     if "Problem 1" in response:
                         question = qna_data[0]["question"]
                     else:
