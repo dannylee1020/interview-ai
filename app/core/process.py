@@ -146,6 +146,9 @@ async def query_qna(
         if topic
         else f"WHERE difficulty = '{difficulty}' and language = '{language}'"
     )
+
+    logging.info(f"WHERE: {where}")
+
     conn = connections.create_db_conn()
     db_results = conn.execute(
         f"""

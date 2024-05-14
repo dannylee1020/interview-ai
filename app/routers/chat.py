@@ -68,12 +68,15 @@ async def ws_chat_audio(
     ).fetchone()
     conn.close()
 
+    logging.info(f"lang: {lang}")
+
     # query problems and solutions to feed into the model
     qna_data = await process.query_qna(
         difficulty=difficulty,
         topic=topic,
         language=lang["language"] if lang else "python",
     )
+    logging.info(qna_data)
     # construct list for model injection
     questions = [q["question"] for q in qna_data]
     solutions = [q["solution"] for q in qna_data]
