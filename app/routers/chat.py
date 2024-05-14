@@ -72,7 +72,7 @@ async def ws_chat_audio(
     qna_data = await process.query_qna(
         difficulty=difficulty,
         topic=topic,
-        language=lang["language"].lower() if lang else "python",
+        language=lang["language"] if lang else None,
     )
     # construct list for model injection
     questions = [q["question"] for q in qna_data]

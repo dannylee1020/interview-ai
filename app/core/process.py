@@ -140,11 +140,15 @@ async def query_qna(
 ):
     difficulty = difficulty.lower() if difficulty else "medium"
     topic = topic.lower() if topic else None
+    language = language.lower() if language else "python"
+
     where = (
         f"WHERE difficulty = '{difficulty}' and language = '{language}' and '{topic}' = ANY(tags)"
         if topic
         else f"WHERE difficulty = '{difficulty}' and language = '{language}'"
     )
+
+    logging.info(where)
 
     conn = connections.create_db_conn()
     db_results = conn.execute(

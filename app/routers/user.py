@@ -77,8 +77,8 @@ def get_preference(access_token: Annotated[str, Depends(oauth2_scheme)]):
 
     if not pref:
         return model.UserPreference(
-            theme="dark",
-            language="python",
+            theme="Dark",
+            language="Python",
             model="gpt-4",
         )
 
@@ -107,9 +107,9 @@ def save_preference(
             user_id,
             datetime.now(timezone.utc),
             datetime.now(timezone.utc),
-            pref.theme.lower(),
-            pref.language.lower(),
-            pref.model.lower(),
+            pref.theme,
+            pref.language,
+            pref.model,
         ),
     )
     conn.commit()
