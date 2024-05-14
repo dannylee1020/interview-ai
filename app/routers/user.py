@@ -107,9 +107,9 @@ def save_preference(
             user_id,
             datetime.now(timezone.utc),
             datetime.now(timezone.utc),
-            pref.theme,
-            pref.language,
-            pref.model,
+            pref.theme.lower(),
+            pref.language.lower(),
+            pref.model.lower(),
         ),
     )
     conn.commit()
