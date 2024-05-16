@@ -45,3 +45,14 @@ upsert_preference = """
         language = EXCLUDED.language,
         model = EXCLUDED.model
 """
+
+
+def get_tag_queries(topic):
+    if topic == "array":
+        query = "ARRAY['array', 'hash-table'] && tags"
+    elif topic == "tree":
+        query = "ARRAY['depth-first-search', 'breadth-first-search', 'tree', 'binary-tree'] && tags"
+    else:
+        query = f"'{topic}' = ANY(tags)"
+
+    return query

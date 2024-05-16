@@ -18,7 +18,7 @@ from groq import AsyncGroq
 from openai import AsyncOpenAI
 from pgvector.psycopg import register_vector
 
-from app import queries
+from app.queries import queries
 from app.utils import connections, helper
 
 logging.basicConfig(level=logging.INFO)
@@ -142,8 +142,9 @@ async def query_qna(
     topic = topic.lower() if topic else None
     language = language.lower() if language else "python"
 
+    topic_queries = queries.get_tag_queries(topic)
     where = (
-        f"WHERE difficulty = '{difficulty}' and language = '{language}' and '{topic}' = ANY(tags)"
+        f"WHERE difficulty = '{difficulty}' and language = '{language}' and {topic_queries}"
         if topic
         else f"WHERE difficulty = '{difficulty}' and language = '{language}'"
     )
