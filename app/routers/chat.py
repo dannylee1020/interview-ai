@@ -128,59 +128,61 @@ async def ws_chat_audio(
             """
             if "Problem" in response:
                 logging.info("extracting problem...")
+                audio_bytes, _ = await process.extract_tts(
+                    type="problem",
+                    res=response,
+                    voice=voice,
+                )
                 try:
-                    audio_bytes, _ = await process.extract_tts(
-                        type="problem",
-                        res=response,
-                        voice=voice,
-                    )
-                    question = questions.pop(0)
-                    context.append({"role": "assistant", "content": question})
-                except IndexError as e:
-                    logging.info("Index error.. falling back to direct injection")
                     if "Problem 1" in response:
                         question = qna_data[0]["question"]
-                    else:
+                    elif "Problem 2" in response:
                         question = qna_data[1]["question"]
+                    else:
+                        raise Exception("Model doesn't adhere to problem placeholder")
+                    await manager.send_bytes(audio_bytes, ws)
+                    await manager.send_text(question, ws)
                 except Exception as e:
-                    logging.info("Error extracting problem...")
-                    continue
-                await manager.send_bytes(audio_bytes, ws)
-                await manager.send_text(question, ws)
+                    logging.info(f"Error extracting problem: {e}")
+                    # ? terminate ws connection here for frontend to refresh the page?)
+
             elif "Solution" in response:
                 logging.info("extracting solution...")
+                audio_bytes, _ = await process.extract_tts(
+                    type="solution",
+                    res=response,
+                    voice=voice,
+                )
                 try:
-                    audio_bytes, _ = await process.extract_tts(
-                        type="solution",
-                        res=response,
-                        voice=voice,
-                    )
-                    solution = solutions.pop(0)
-                    context.append({"role": "assistant", "content": solution})
-
-                    await manager.send_bytes(audio_bytes, ws)
-                except IndexError as e:
                     if "Solution 1" in response:
                         solution = qna_data[0]["solution"]
-                    else:
+                    elif "Solution 2" in response:
                         solution = qna_data[1]["solution"]
-                except Exception as e:
-                    logging.info("Error extracting solution. Retrying...")
-                    pattern = re.compile(r"(.*?)```(.*?)```(.*)", re.DOTALL)
-                    matches = pattern.search(response)
-                    solution = matches.group(2).strip()
+                    else:
+                        logging.info(
+                            "Error extracting solution. falling back to direct extraction"
+                        )
+                        pattern = re.compile(r"(.*?)```(.*?)```(.*)", re.DOTALL)
+                        matches = pattern.search(response)
+                        solution = matches.group(2).strip()
 
-                    text_prev = matches.group(1).strip() if matches.group(1) else ""
-                    text_post = matches.group(3).strip() if matches.group(3) else ""
-                    combined_text = text_prev + f" {text_post}"
-                    audio_bytes = await process.text_to_speech(combined_text, voice)
+                        text_prev = matches.group(1).strip() if matches.group(1) else ""
+                        text_post = matches.group(3).strip() if matches.group(3) else ""
+                        combined_text = text_prev + f" {text_post}"
+                        audio_bytes = await process.text_to_speech(combined_text, voice)
+
                     await manager.send_bytes(audio_bytes, ws)
-                await manager.send_text(solution, ws)
+                    await manager.send_text(solution, ws)
+
+                except Exception as e:
+                    logging.info(f"Exception raised while extracting solution: {e}")
+                    # ? disconnect ws connection and make client refresh the page?
             else:
                 audio_bytes = await process.text_to_speech(response, voice)
                 await manager.send_bytes(audio_bytes, ws)
     except WebSocketDisconnect as e:
         logging.info("Saving vectors to DB before disconnecting")
+        logging.info(context)
         await process.save_vector(context[1:], d_token["sub"])
         await manager.disconnect(id, ws)
         logging.info("WebsocketDisconnect raised")

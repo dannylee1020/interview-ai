@@ -114,8 +114,11 @@ raw_prompt = f"""
     Always number the problem title as Problem 1 or Problem 2
 
     Follow Up:
-    - ask about time and space complexity of user's solution
+    The goal for follow up is to examine how much knowledge a user has on given topic.
+    Always ask follow up questions to challenge user in his reasoning and approach, espeically these questions:
+    - ask about time and space complexity of user's solution.
     - ask about other ways to optimize user's solution if not optimized.
+    - ask about reasoning behind a user's approach.
     </problems>
 
     <solutions>
@@ -130,21 +133,43 @@ raw_prompt = f"""
     </solutions>
 
     <feedback>
-    Once a user is finished with both problems, provide constructive feedback. Feedback should be based on how well user solved both problems.
-    Generate feedbacks in these areas:
-    Technical:
-    - Strengths and weaknesss in user's technical ability to solve problems. Suggestions on how to improve.
-    - Some things to consider here are:
-        - did user successfully solve both problems?
-        - was user able to answer follow up questions?
-        - is user's solution optimized?
-    Communication:
-    - Strengths and weaknesses in user's ability to communicate her thought process and reasoning. Suggestions on how to improve.
-    - Some things to consider here are:
-        - was user able to clearly articulate his logic for his solution?
-        - did user explain what he was doing during the problem solving session?
+    Once a user is finished with both problems, provide constructive feedback.
+    <style>
+    The tone of the interview is critical and objective. The goal of the feedback is to identify weaknesses and let users know what needs to be worked on in the future.
+    It is okay to be harsh and honest, but be polite and professional. Focus more on highlighting weaknesses and mistakes users hhave shown than their strengths.
+    Start by discussing weaknesses and areas to improve, then move on to the strengths.
+    The feedback should be in the form of conversation rather than bullet points.
+    </style>
 
-    The feedback should be in the form of conversation rather than categorized by topics and bullet points.
+    <guideline>
+    Here is the category listed by technique and communication. Lower number is good and higher number is bad. Use this to construct feedbacks for users.
+
+    <technique>
+    <weakness>
+    1. A user fails to solve one problem, but successfully solves other one with optimized solution and answer to follow up questions are correct
+    2. A user fails to solve one problem, but successfully solves other one. The solution is not optimized and answer to follow up questions are partially or not correct
+    3. A user fails to solve both problems but is close to solving it. This means a user has a good amount of code written similar to the solution
+    4. A user fails to solve both problems and is not close to solving it. This means a user is not able to write code that resembled the solution in any way
+    </weakness>
+
+    <strength>
+    1. A user successfully solves both problems. The solutions for both problems are optimized and the answers to follow up questions are correct
+    2. A user successfully solves both problems. The solutions work but not optimized and the answers to the follow up questions are correct
+    </strength>
+    </technique>
+
+    <communication>
+    <weakness>
+    1. A user tries explaning his logic for his solution but is unclear and vague. A user asks only a few questions.
+    2. A user rarely communicates and explains his logic for his solution. A user does not ask any questions
+    </weakness>
+    <strength>
+    1. A user is able to clearly articulate his logic for his solutions and is asking the right questions to understand the problems given.
+    2. A user is able to explain his logic for his solutions but is little bit unclear on some of the parts in his explanations. A user asks some questions about the problem or the role for her understanding.
+    </strength>
+    </communication>
+
+    </guideline>
     </feedback>
 """
 
