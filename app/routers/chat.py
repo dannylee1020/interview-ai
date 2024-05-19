@@ -1,13 +1,10 @@
 import asyncio
-import copy
-import json
 import logging
 import random
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Annotated
 
-import openai
 from fastapi import (
     APIRouter,
     Depends,
@@ -18,7 +15,7 @@ from fastapi import (
 )
 from fastapi.security import OAuth2PasswordBearer
 
-from app.core import process
+from app.core import process, rag
 from app.core.authenticate import decode_jwt
 from app.models import chat as model
 from app.utils import connections, helper
@@ -58,8 +55,6 @@ async def ws_chat_audio(
         raise WebSocketException(code=403, reason="websocket connection already open")
 
     voice = random.choice(VOICE_TYPES)
-    model = "gpt-4o"
-
     # fetch language preference
     conn = connections.create_db_conn()
     lang = conn.execute(
@@ -69,7 +64,7 @@ async def ws_chat_audio(
     conn.close()
 
     # query problems and solutions to feed into the model
-    qna_data = await process.query_qna(
+    qna_data = await rag.query_qna(
         difficulty=difficulty,
         topic=topic,
         language=lang["language"] if lang else None,
@@ -109,17 +104,14 @@ async def ws_chat_audio(
             logging.info(f"User response: {combined}")
             context.append({"role": "user", "content": combined})
 
-            # calling chat async
-            chat_response = asyncio.create_task(
-                process.chat_completion(
-                    context,
-                    model=model,
-                    stream=False,
-                )
+            response = await process.chat_completion(
+                context,
+                model=model,
+                stream=False,
             )
-            response = await chat_response
             logging.info(f"Model response: {response}")
             context.append({"role": "assistant", "content": response})
+
             """
                 problems and solutions get extracted from the response and sent as text
                 rest of the tokens are extracted and converted to audio bytes and sent
@@ -144,6 +136,9 @@ async def ws_chat_audio(
                     await manager.send_text(question, ws)
                 except Exception as e:
                     logging.info(f"Error extracting problem: {e}")
+                    websocket.close()
+                    raise WebSocketDisconnect()
+
                     # ? terminate ws connection here for frontend to refresh the page?)
 
             elif "Solution" in response:
@@ -162,30 +157,22 @@ async def ws_chat_audio(
                         logging.info(
                             "Error extracting solution. falling back to direct extraction"
                         )
-                        pattern = re.compile(r"(.*?)```(.*?)```(.*)", re.DOTALL)
-                        matches = pattern.search(response)
-                        solution = matches.group(2).strip()
-
-                        text_prev = matches.group(1).strip() if matches.group(1) else ""
-                        text_post = matches.group(3).strip() if matches.group(3) else ""
-                        combined_text = text_prev + f" {text_post}"
-                        audio_bytes = await process.text_to_speech(combined_text, voice)
-
+                        audio_bytes, solution = (
+                            await process.extract_unformatted_solution(response)
+                        )
                     await manager.send_bytes(audio_bytes, ws)
                     await manager.send_text(solution, ws)
-
                 except Exception as e:
                     logging.info(f"Exception raised while extracting solution: {e}")
+                    raise WebSocketDisconnect()
                     # ? disconnect ws connection and make client refresh the page?
             else:
                 audio_bytes = await process.text_to_speech(response, voice)
                 await manager.send_bytes(audio_bytes, ws)
     except WebSocketDisconnect as e:
         logging.info("Saving vectors to DB before disconnecting")
-        logging.info(context)
-        await process.save_vector(context[1:], d_token["sub"])
+        await rag.save_vector(context[1:], d_token["sub"])
         await manager.disconnect(id, ws)
-        logging.info("WebsocketDisconnect raised")
     except Exception as e:
-        await manager.disconnect(id, ws)
         logging.info(f"Unexpected exception raised: {str(e)}")
+        await manager.disconnect(id, ws)

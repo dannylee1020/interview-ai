@@ -124,13 +124,11 @@ def login_user(
     refresh token and returns new access and refresh token
 
     """
-    # ?  maybe need to distinguish between
-    # ?  user record not existing and wrong?
     user = auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=401,
-            detail="Incorrect username or password",
+            detail="Incorrect credentials or user does not exist",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -143,7 +141,6 @@ def login_user(
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRATION_MIN)
     new_access_token = auth.create_access_token(payload, access_token_expires)
     new_refresh_token = auth.create_refresh_token(payload)
-
     # delete exisitng RT if exists
     r.delete(f"rt:whitelist:{user['id']}")
     # add new RT to cache
@@ -183,7 +180,6 @@ def oauth_user(cred: model.OAuthCred):
     ).fetchone()
 
     user_id = user.get("id") if user else uuid.uuid4()
-
     # if first time user, create a record in the DB first
     if not user:
         conn.execute(

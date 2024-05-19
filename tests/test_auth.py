@@ -71,7 +71,7 @@ def test_incorrect_credential_login():
     )
 
     assert res.status_code == 401
-    assert "Incorrect username or password" in res.text
+    assert "Incorrect credentials or user does not exist" in res.text
 
 
 def test_successful_token_validation():
