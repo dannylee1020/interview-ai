@@ -26,6 +26,7 @@ router = APIRouter(prefix="/chat")
 manager = connections.ConnectionManager()
 
 VOICE_TYPES = ["alloy", "echo", "fable", "nova", "shimmer"]
+MODEL = "gpt-4o"
 
 
 @router.websocket("/")
@@ -44,6 +45,7 @@ async def ws_chat_audio(
 
     The id is the session_id of a user that is unique per user.
     """
+    model = MODEL
     # validate token for authorization
     d_token, err = decode_jwt(token, refresh=False)
     if err:
@@ -170,6 +172,7 @@ async def ws_chat_audio(
                 audio_bytes = await process.text_to_speech(response, voice)
                 await manager.send_bytes(audio_bytes, ws)
     except WebSocketDisconnect as e:
+        logging.info(f"disconnect error: {e}")
         logging.info("Saving vectors to DB before disconnecting")
         await rag.save_vector(context[1:], d_token["sub"])
         await manager.disconnect(id, ws)

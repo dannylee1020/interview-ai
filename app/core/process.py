@@ -25,7 +25,7 @@ MODEL_MAPPING = {
 openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
-async def chat_completion(messages: list, model: str = "gpt-4o", stream: bool = False):
+async def chat_completion(messages: list, model: str, stream: bool = False):
     logging.info(f"Sending request to {model} chat completion endpoint...")
 
     if "gpt" in model:
