@@ -172,9 +172,7 @@ async def ws_chat_audio(
                 audio_bytes = await process.text_to_speech(response, voice)
                 await manager.send_bytes(audio_bytes, ws)
     except WebSocketDisconnect as e:
-        logging.info(f"disconnect error: {e}")
-        logging.info("Saving vectors to DB before disconnecting")
-        await rag.save_vector(context[1:], d_token["sub"])
+        logging.info("Disconnecting WebSocket")
         await manager.disconnect(id, ws)
     except Exception as e:
         logging.info(f"Unexpected exception raised: {str(e)}")
